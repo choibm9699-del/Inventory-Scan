@@ -59,7 +59,6 @@ export function InventoryTable({ records, onDelete, onExport, onClear }: Invento
                 <th className="text-left px-3 py-2.5 font-medium text-muted-foreground text-xs">바코드</th>
                 <th className="text-left px-3 py-2.5 font-medium text-muted-foreground text-xs">코드</th>
                 <th className="text-left px-3 py-2.5 font-medium text-muted-foreground text-xs">상품명</th>
-                <th className="text-left px-3 py-2.5 font-medium text-muted-foreground text-xs">분류</th>
                 <th className="text-right px-3 py-2.5 font-medium text-muted-foreground text-xs">수량</th>
                 <th className="px-3 py-2.5" />
               </tr>
@@ -74,9 +73,6 @@ export function InventoryTable({ records, onDelete, onExport, onClear }: Invento
                   <td className="px-3 py-3 font-mono text-xs text-muted-foreground">{r.barcode}</td>
                   <td className="px-3 py-3 font-medium text-xs">{r.code}</td>
                   <td className="px-3 py-3 font-medium">{r.name}</td>
-                  <td className="px-3 py-3">
-                    <span className="inline-block px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">{r.category}</span>
-                  </td>
                   <td className="px-3 py-3 text-right font-bold tabular-nums">
                     {r.quantity.toLocaleString()}
                     <span className="text-xs font-normal text-muted-foreground ml-1">{r.unit}</span>

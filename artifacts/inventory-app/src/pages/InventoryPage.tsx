@@ -223,7 +223,7 @@ export function InventoryPage() {
             }`}
           >
             <List className="w-4 h-4" />
-            목록
+            오늘
           </button>
           <button
             onClick={() => setViewMode("calendar")}
