@@ -31,12 +31,6 @@ export function InventoryTable({ records, onDelete, onExport, onClear }: Invento
                 <FileDown className="w-4 h-4" />
                 엑셀 저장
               </button>
-              <button
-                onClick={() => { if (confirm("모든 기록을 삭제하시겠습니까?")) onClear(); }}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-muted text-muted-foreground rounded-lg text-sm font-medium hover:bg-muted/80 transition-colors"
-              >
-                전체 삭제
-              </button>
             </>
           )}
         </div>
