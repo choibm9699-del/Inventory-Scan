@@ -57,7 +57,7 @@ export function InventoryTable({ records, onDelete, onExport, onClear }: Invento
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">바코드</th>
                 <th className="text-left px-3 py-2.5 font-medium text-muted-foreground text-xs">코드</th>
                 <th className="text-left px-3 py-2.5 font-medium text-muted-foreground text-xs">상품명</th>
-                <th className="text-right px-3 py-2.5 font-medium text-muted-foreground text-xs">수량</th>
+                <th className="px-3 py-2.5 font-medium text-muted-foreground text-[15px] text-center">수량</th>
                 <th className="px-3 py-2.5 font-medium text-muted-foreground text-xs whitespace-nowrap pl-[0px] pr-[0px] text-center">날짜/시간</th>
                 <th className="px-3 py-2.5" />
               </tr>
