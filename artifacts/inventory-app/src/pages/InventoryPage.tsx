@@ -151,7 +151,7 @@ export function InventoryPage() {
             </div>
             <button
               onClick={() => handleSearch()}
-              className="px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+              className="px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity ml-[0px] mr-[0px] pl-[42px] pr-[42px] text-[17px]"
             >
               검색
             </button>
