@@ -4,6 +4,7 @@ import { BarcodeScanner } from "../components/BarcodeScanner";
 import { ProductManager } from "../components/ProductManager";
 import { InventoryTable } from "../components/InventoryTable";
 import { InventoryCalendar } from "../components/InventoryCalendar";
+import { PasswordModal } from "../components/PasswordModal";
 import { useProducts } from "../hooks/useProducts";
 import { useInventory } from "../hooks/useInventory";
 import { exportToExcel } from "../lib/excel";
@@ -19,6 +20,7 @@ export function InventoryPage() {
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState("");
   const [showScanner, setShowScanner] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showProductManager, setShowProductManager] = useState(false);
   const [searchState, setSearchState] = useState<"idle" | "found" | "notfound">("idle");
   const [lastSaved, setLastSaved] = useState<string | null>(null);
@@ -87,6 +89,12 @@ export function InventoryPage() {
       {showScanner && (
         <BarcodeScanner onDetected={handleScanDetected} onClose={() => setShowScanner(false)} />
       )}
+      {showPasswordModal && (
+        <PasswordModal
+          onSuccess={() => { setShowPasswordModal(false); setShowProductManager(true); }}
+          onClose={() => setShowPasswordModal(false)}
+        />
+      )}
       {showProductManager && (
         <ProductManager
           products={products}
@@ -110,7 +118,7 @@ export function InventoryPage() {
             </div>
           </div>
           <button
-            onClick={() => setShowProductManager(true)}
+            onClick={() => setShowPasswordModal(true)}
             className="flex items-center gap-1.5 px-3 py-2 bg-sidebar-accent rounded-lg text-sm font-medium hover:bg-sidebar-accent/80 transition-colors"
           >
             <Package className="w-4 h-4" />

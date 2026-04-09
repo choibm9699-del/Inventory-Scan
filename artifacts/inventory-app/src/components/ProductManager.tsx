@@ -1,7 +1,8 @@
 import { useState, useRef } from "react";
-import { Plus, Pencil, Trash2, X, Check, Package, Upload, Download, AlertCircle } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Check, Package, Upload, Download, AlertCircle, KeyRound } from "lucide-react";
 import * as XLSX from "xlsx";
 import type { Product } from "../types";
+import { getAdminPassword, setAdminPassword } from "./PasswordModal";
 
 interface ProductManagerProps {
   products: Product[];
@@ -27,6 +28,10 @@ export function ProductManager({ products, onAdd, onUpdate, onDelete, onReset, o
   const [editForm, setEditForm] = useState<Product | null>(null);
   const [error, setError] = useState("");
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
+  const [showChangePw, setShowChangePw] = useState(false);
+  const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
+  const [pwError, setPwError] = useState("");
+  const [pwSuccess, setPwSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleAdd() {
@@ -52,6 +57,17 @@ export function ProductManager({ products, onAdd, onUpdate, onDelete, onReset, o
     onUpdate(editingBarcode!, editForm);
     setEditingBarcode(null);
     setEditForm(null);
+  }
+
+  function handleChangePw() {
+    setPwError("");
+    if (pwForm.current !== getAdminPassword()) { setPwError("현재 비밀번호가 올바르지 않습니다."); return; }
+    if (pwForm.next.length < 4) { setPwError("새 비밀번호는 4자리 이상이어야 합니다."); return; }
+    if (pwForm.next !== pwForm.confirm) { setPwError("새 비밀번호가 일치하지 않습니다."); return; }
+    setAdminPassword(pwForm.next);
+    setPwForm({ current: "", next: "", confirm: "" });
+    setPwSuccess(true);
+    setTimeout(() => { setPwSuccess(false); setShowChangePw(false); }, 1500);
   }
 
   function downloadTemplate() {
@@ -161,7 +177,63 @@ export function ProductManager({ products, onAdd, onUpdate, onDelete, onReset, o
           >
             초기화
           </button>
+          <button
+            onClick={() => { setShowChangePw((v) => !v); setPwError(""); setPwSuccess(false); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-muted text-muted-foreground rounded-lg text-sm font-medium hover:bg-muted/80 transition-colors ml-auto"
+          >
+            <KeyRound className="w-4 h-4" />
+            비밀번호 변경
+          </button>
         </div>
+
+        {showChangePw && (
+          <div className="px-5 py-4 border-b border-border bg-muted/20 shrink-0">
+            <p className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-1.5"><KeyRound className="w-3.5 h-3.5" />비밀번호 변경</p>
+            {pwSuccess ? (
+              <div className="flex items-center gap-2 text-green-600 text-sm font-medium py-1">
+                <Check className="w-4 h-4" /> 비밀번호가 변경되었습니다.
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="text-xs text-muted-foreground">현재 비밀번호</label>
+                  <input
+                    type="password"
+                    className="w-full mt-1 px-3 py-1.5 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="현재 비밀번호"
+                    value={pwForm.current}
+                    onChange={(e) => setPwForm((f) => ({ ...f, current: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">새 비밀번호</label>
+                  <input
+                    type="password"
+                    className="w-full mt-1 px-3 py-1.5 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="새 비밀번호 (4자 이상)"
+                    value={pwForm.next}
+                    onChange={(e) => setPwForm((f) => ({ ...f, next: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">새 비밀번호 확인</label>
+                  <input
+                    type="password"
+                    className="w-full mt-1 px-3 py-1.5 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="비밀번호 확인"
+                    value={pwForm.confirm}
+                    onChange={(e) => setPwForm((f) => ({ ...f, confirm: e.target.value }))}
+                  />
+                </div>
+                {pwError && <p className="col-span-3 text-xs text-destructive">{pwError}</p>}
+                <div className="col-span-3 flex gap-2">
+                  <button onClick={handleChangePw} className="px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90">변경</button>
+                  <button onClick={() => { setShowChangePw(false); setPwError(""); }} className="px-4 py-1.5 bg-muted text-muted-foreground rounded-lg text-sm hover:bg-muted/80">취소</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {uploadResult && (
           <div className="px-5 py-3 border-b border-border bg-muted/20 shrink-0 space-y-1">
