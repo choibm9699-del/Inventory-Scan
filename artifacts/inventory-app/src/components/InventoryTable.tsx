@@ -72,7 +72,7 @@ export function InventoryTable({ records, onDelete, onExport, onClear }: Invento
                     {r.quantity.toLocaleString()}
                     <span className="text-xs font-normal text-muted-foreground ml-1">{r.unit}</span>
                   </td>
-                  <td className="px-4 py-5 whitespace-nowrap">
+                  <td className="px-4 py-5 whitespace-nowrap pl-[0px] pr-[0px]">
                     <div className="text-xs text-foreground font-medium">{r.date}</div>
                     <div className="text-xs text-muted-foreground">{r.time}</div>
                   </td>
