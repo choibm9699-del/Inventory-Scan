@@ -55,27 +55,27 @@ export function InventoryTable({ records, onDelete, onExport, onClear }: Invento
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
-                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs whitespace-nowrap">날짜/시간</th>
-                <th className="text-left px-3 py-2.5 font-medium text-muted-foreground text-xs">바코드</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">바코드</th>
                 <th className="text-left px-3 py-2.5 font-medium text-muted-foreground text-xs">코드</th>
                 <th className="text-left px-3 py-2.5 font-medium text-muted-foreground text-xs">상품명</th>
                 <th className="text-right px-3 py-2.5 font-medium text-muted-foreground text-xs">수량</th>
+                <th className="text-left px-3 py-2.5 font-medium text-muted-foreground text-xs whitespace-nowrap">날짜/시간</th>
                 <th className="px-3 py-2.5" />
               </tr>
             </thead>
             <tbody>
               {records.map((r) => (
                 <tr key={r.id} className="border-t border-border hover:bg-muted/20 transition-colors">
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <div className="text-xs text-foreground font-medium">{r.date}</div>
-                    <div className="text-xs text-muted-foreground">{r.time}</div>
-                  </td>
-                  <td className="px-3 py-3 font-mono text-xs text-muted-foreground">{r.barcode}</td>
-                  <td className="px-3 py-3 font-medium text-xs">{r.code}</td>
-                  <td className="px-3 py-3 font-medium">{r.name}</td>
-                  <td className="px-3 py-3 text-right font-bold tabular-nums">
+                  <td className="px-4 py-3 font-mono text-sm font-bold">{r.barcode}</td>
+                  <td className="px-3 py-3 text-sm font-bold">{r.code}</td>
+                  <td className="px-3 py-3 text-base font-bold">{r.name}</td>
+                  <td className="px-3 py-3 text-right text-base font-bold tabular-nums">
                     {r.quantity.toLocaleString()}
                     <span className="text-xs font-normal text-muted-foreground ml-1">{r.unit}</span>
+                  </td>
+                  <td className="px-3 py-3 whitespace-nowrap">
+                    <div className="text-xs text-foreground font-medium">{r.date}</div>
+                    <div className="text-xs text-muted-foreground">{r.time}</div>
                   </td>
                   <td className="px-3 py-3">
                     <button
