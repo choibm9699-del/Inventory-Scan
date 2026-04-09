@@ -113,7 +113,7 @@ export function InventoryPage() {
               <ClipboardList className="w-4.5 h-4.5 text-white" />
             </div>
             <div>
-              <h1 className="font-bold text-lg leading-tight">재고조사</h1>
+              <h1 className="font-bold text-lg leading-tight">현장 재고조사</h1>
               <p className="text-xs text-sidebar-foreground/60">Inventory Manager</p>
             </div>
           </div>
