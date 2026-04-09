@@ -41,7 +41,6 @@ export function InventoryTable({ records, onDelete, onExport, onClear }: Invento
           )}
         </div>
       </div>
-
       {records.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-3">
@@ -80,7 +79,7 @@ export function InventoryTable({ records, onDelete, onExport, onClear }: Invento
                   <td className="px-4 py-5">
                     <button
                       onClick={() => onDelete(r.id)}
-                      className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                      className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors ml-[-18px] mr-[-18px]"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
