@@ -1,12 +1,15 @@
 import { useState, useRef, KeyboardEvent } from "react";
-import { Barcode, Camera, Search, Package, ClipboardList, CheckCircle, AlertCircle } from "lucide-react";
+import { Barcode, Camera, Search, Package, ClipboardList, CheckCircle, AlertCircle, List, CalendarDays } from "lucide-react";
 import { BarcodeScanner } from "../components/BarcodeScanner";
 import { ProductManager } from "../components/ProductManager";
 import { InventoryTable } from "../components/InventoryTable";
+import { InventoryCalendar } from "../components/InventoryCalendar";
 import { useProducts } from "../hooks/useProducts";
 import { useInventory } from "../hooks/useInventory";
 import { exportToExcel } from "../lib/excel";
 import type { Product } from "../types";
+
+type ViewMode = "list" | "calendar";
 
 export function InventoryPage() {
   const { products, addProduct, updateProduct, deleteProduct, searchByBarcode, resetToDefault } = useProducts();
@@ -19,6 +22,7 @@ export function InventoryPage() {
   const [showProductManager, setShowProductManager] = useState(false);
   const [searchState, setSearchState] = useState<"idle" | "found" | "notfound">("idle");
   const [lastSaved, setLastSaved] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   const quantityRef = useRef<HTMLInputElement>(null);
 
@@ -116,6 +120,7 @@ export function InventoryPage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-5">
+        {/* Scan section */}
         <div className="bg-card border border-card-border rounded-xl shadow-sm p-5">
           <h2 className="font-semibold text-sm text-muted-foreground mb-4 flex items-center gap-2">
             <Barcode className="w-4 h-4" />
@@ -207,12 +212,45 @@ export function InventoryPage() {
           )}
         </div>
 
-        <InventoryTable
-          records={records}
-          onDelete={deleteRecord}
-          onExport={() => exportToExcel(records)}
-          onClear={clearAll}
-        />
+        {/* View mode tabs */}
+        <div className="flex items-center gap-1 bg-muted rounded-xl p-1 w-fit">
+          <button
+            onClick={() => setViewMode("list")}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              viewMode === "list"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <List className="w-4 h-4" />
+            목록
+          </button>
+          <button
+            onClick={() => setViewMode("calendar")}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              viewMode === "calendar"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <CalendarDays className="w-4 h-4" />
+            캘린더
+          </button>
+        </div>
+
+        {viewMode === "list" ? (
+          <InventoryTable
+            records={records}
+            onDelete={deleteRecord}
+            onExport={() => exportToExcel(records)}
+            onClear={clearAll}
+          />
+        ) : (
+          <InventoryCalendar
+            records={records}
+            onDelete={deleteRecord}
+          />
+        )}
       </main>
     </div>
   );
