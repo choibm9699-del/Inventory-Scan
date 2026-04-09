@@ -66,23 +66,23 @@ export function InventoryTable({ records, onDelete, onExport, onClear }: Invento
             <tbody>
               {records.map((r) => (
                 <tr key={r.id} className="border-t border-border hover:bg-muted/20 transition-colors">
-                  <td className="px-4 py-3 font-mono text-sm font-bold">{r.barcode}</td>
-                  <td className="px-3 py-3 text-sm font-bold">{r.code}</td>
-                  <td className="px-3 py-3 text-base font-bold">{r.name}</td>
-                  <td className="px-3 py-3 text-right text-base font-bold tabular-nums">
+                  <td className="px-4 py-5 font-mono text-sm font-bold">{r.barcode}</td>
+                  <td className="px-4 py-5 text-sm font-bold">{r.code}</td>
+                  <td className="px-4 py-5 text-base font-bold">{r.name}</td>
+                  <td className="px-4 py-5 text-right text-base font-bold tabular-nums">
                     {r.quantity.toLocaleString()}
                     <span className="text-xs font-normal text-muted-foreground ml-1">{r.unit}</span>
                   </td>
-                  <td className="px-3 py-3 whitespace-nowrap">
+                  <td className="px-4 py-5 whitespace-nowrap">
                     <div className="text-xs text-foreground font-medium">{r.date}</div>
                     <div className="text-xs text-muted-foreground">{r.time}</div>
                   </td>
-                  <td className="px-3 py-3">
+                  <td className="px-4 py-5">
                     <button
                       onClick={() => onDelete(r.id)}
-                      className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors"
+                      className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-5 h-5" />
                     </button>
                   </td>
                 </tr>
