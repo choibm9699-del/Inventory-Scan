@@ -67,7 +67,7 @@ export function InventoryTable({ records, onDelete, onExport, onClear }: Invento
                 <tr key={r.id} className="border-t border-border hover:bg-muted/20 transition-colors">
                   <td className="px-4 py-5 font-mono font-bold text-right text-[15px]">{r.barcode}</td>
                   <td className="px-4 py-5 text-sm font-bold text-center">{r.code}</td>
-                  <td className="px-4 py-5 text-base font-bold">{r.name}</td>
+                  <td className="px-4 py-5 text-base font-bold text-center">{r.name}</td>
                   <td className="px-4 py-5 text-right text-base font-bold tabular-nums">
                     {r.quantity.toLocaleString()}
                     <span className="text-xs font-normal text-muted-foreground ml-1">{r.unit}</span>
