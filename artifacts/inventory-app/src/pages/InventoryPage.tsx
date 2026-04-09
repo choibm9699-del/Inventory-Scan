@@ -157,7 +157,7 @@ export function InventoryPage() {
             </button>
             <button
               onClick={() => setShowScanner(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-sidebar text-sidebar-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-sidebar text-sidebar-foreground rounded-lg font-medium hover:opacity-90 transition-opacity text-[17px] pl-[16px] pr-[16px]"
             >
               <Camera className="w-4 h-4" />
               카메라
