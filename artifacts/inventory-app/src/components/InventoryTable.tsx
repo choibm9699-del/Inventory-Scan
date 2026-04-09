@@ -52,7 +52,6 @@ export function InventoryTable({ records, onDelete, onExport, onClear }: Invento
                 <th className="px-3 py-2.5 font-medium text-muted-foreground text-[15px] text-center">코드</th>
                 <th className="px-3 py-2.5 font-medium text-muted-foreground text-[15px] text-center">상품명</th>
                 <th className="px-3 py-2.5 font-medium text-muted-foreground text-[15px] text-center">수량</th>
-                <th className="px-3 py-2.5 font-medium text-muted-foreground text-xs whitespace-nowrap pl-[0px] pr-[0px] text-center">날짜/시간</th>
                 <th className="px-3 py-2.5" />
               </tr>
             </thead>
@@ -65,10 +64,6 @@ export function InventoryTable({ records, onDelete, onExport, onClear }: Invento
                   <td className="px-4 py-5 text-right text-base font-bold tabular-nums">
                     {r.quantity.toLocaleString()}
                     <span className="text-xs font-normal text-muted-foreground ml-1">{r.unit}</span>
-                  </td>
-                  <td className="px-4 py-5 whitespace-nowrap pl-[0px] pr-[0px] text-center">
-                    <div className="text-xs text-foreground font-medium">{r.date}</div>
-                    <div className="text-xs text-muted-foreground">{r.time}</div>
                   </td>
                   <td className="px-4 py-5">
                     <button
