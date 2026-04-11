@@ -85,7 +85,7 @@ export function InventoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {showScanner && (
         <BarcodeScanner onDetected={handleScanDetected} onClose={() => setShowScanner(false)} />
       )}
@@ -107,7 +107,7 @@ export function InventoryPage() {
       )}
 
       <header className="bg-sidebar text-sidebar-foreground shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between w-full">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
               <ClipboardList className="w-4.5 h-4.5 text-white" />
@@ -127,7 +127,7 @@ export function InventoryPage() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-6 space-y-5">
+      <main className="max-w-4xl mx-auto px-4 py-6 space-y-5 w-full overflow-x-hidden">
         {/* Scan section */}
         <div className="bg-card border border-card-border rounded-xl shadow-sm p-5">
           <h2 className="font-semibold text-sm text-muted-foreground mb-4 flex items-center gap-2">
