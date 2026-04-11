@@ -31,7 +31,7 @@ export function InventoryPage() {
     year: "numeric",
     month: "long",
     day: "numeric",
-  });
+  }).replace(/\s+/g, "-");
 
   function handleSearch(barcode?: string) {
     const code = (barcode ?? barcodeInput).trim();
@@ -247,7 +247,7 @@ export function InventoryPage() {
             }`}
           >
             <List className="w-4 h-4" />
-            오늘 {todayLabel}
+            오늘 [{todayLabel}]
           </button>
           <button
             onClick={() => setViewMode("calendar")}
