@@ -295,8 +295,7 @@ export function ProductManager({ products, onAdd, onUpdate, onDelete, onReset, o
             <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm">
               <tr>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">바코드</th>
-                <th className="text-left px-3 py-2.5 font-medium text-muted-foreground text-xs">코드</th>
-                <th className="text-left px-3 py-2.5 font-medium text-muted-foreground text-xs">상품명</th>
+                <th className="text-left px-3 py-2.5 font-medium text-muted-foreground text-xs">상품명 / 코드</th>
                 <th className="px-3 py-2.5" />
               </tr>
             </thead>
@@ -307,10 +306,8 @@ export function ProductManager({ products, onAdd, onUpdate, onDelete, onReset, o
                     <>
                       <td className="px-4 py-2 font-mono text-xs text-muted-foreground">{p.barcode}</td>
                       <td className="px-3 py-2">
-                        <input className="w-24 px-2 py-1 text-xs border border-input rounded bg-background" value={editForm.code} onChange={(e) => setEditForm((f) => f ? { ...f, code: e.target.value } : f)} />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input className="w-48 px-2 py-1 text-xs border border-input rounded bg-background" value={editForm.name} onChange={(e) => setEditForm((f) => f ? { ...f, name: e.target.value } : f)} />
+                        <div className="text-sm font-bold">{editForm.name}</div>
+                        <input className="w-full mt-1 px-2 py-1 text-xs border border-input rounded bg-background" value={editForm.code} onChange={(e) => setEditForm((f) => f ? { ...f, code: e.target.value } : f)} />
                       </td>
                       <td className="px-3 py-2">
                         <div className="flex gap-1">
@@ -322,8 +319,10 @@ export function ProductManager({ products, onAdd, onUpdate, onDelete, onReset, o
                   ) : (
                     <>
                       <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">{p.barcode}</td>
-                      <td className="px-3 py-2.5 font-medium">{p.code}</td>
-                      <td className="px-3 py-2.5">{p.name}</td>
+                      <td className="px-3 py-2.5">
+                        <div className="text-sm font-bold text-foreground">{p.name}</div>
+                        <div className="text-sm font-bold text-muted-foreground">{p.code}</div>
+                      </td>
                       <td className="px-3 py-2.5">
                         <div className="flex gap-1">
                           <button onClick={() => startEdit(p)} className="p-1 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
