@@ -10,7 +10,7 @@ interface InventoryTableProps {
 }
 
 export function InventoryTable({ records, onDelete, onExport, onClear }: InventoryTableProps) {
-  const [showBarcode, setShowBarcode] = useState(true);
+  const [showBarcode, setShowBarcode] = useState(false);
   const totalItems = records.reduce((sum, r) => sum + r.quantity, 0);
 
   return (
