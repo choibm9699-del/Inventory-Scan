@@ -44,31 +44,31 @@ export function InventoryTable({ records, onDelete, onExport, onClear }: Invento
           <p className="text-xs mt-1 opacity-70">바코드를 스캔하거나 입력해서 재고를 추가하세요</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="overflow-x-hidden">
+          <table className="w-full text-sm table-fixed">
             <thead className="bg-muted/50">
               <tr>
-                <th className="px-4 py-2.5 font-medium text-muted-foreground text-[15px] text-center">바코드</th>
-                <th className="px-3 py-2.5 font-medium text-muted-foreground text-[15px] text-center">상품명 / 코드</th>
-                <th className="px-3 py-2.5 font-medium text-muted-foreground text-[15px] text-center">수량</th>
-                <th className="px-3 py-2.5" />
+                <th className="w-[24%] px-2 py-2.5 font-medium text-muted-foreground text-[15px] text-center">바코드</th>
+                <th className="w-[50%] px-2 py-2.5 font-medium text-muted-foreground text-[15px] text-center">상품명 / 코드</th>
+                <th className="w-[16%] px-2 py-2.5 font-medium text-muted-foreground text-[15px] text-center">수량</th>
+                <th className="w-[10%] px-2 py-2.5" />
               </tr>
             </thead>
             <tbody>
               {records.map((r) => (
                 <tr key={r.id} className="border-t border-border hover:bg-muted/20 transition-colors">
-                  <td className="px-4 py-5 font-mono font-bold text-[15px] text-center">{r.barcode}</td>
-                  <td className="px-4 py-5 text-center">
+                  <td className="px-2 py-5 font-mono font-bold text-[15px] text-center truncate">{r.barcode}</td>
+                  <td className="px-2 py-5 text-center min-w-0">
                     <div className="text-base font-bold">{r.name}</div>
-                    <div className="text-sm font-bold text-muted-foreground">{r.code}</div>
+                    <div className="text-sm font-bold text-muted-foreground truncate">{r.code}</div>
                   </td>
-                  <td className="px-4 py-5 text-center text-base font-bold tabular-nums">
+                  <td className="px-2 py-5 text-center text-base font-bold tabular-nums whitespace-nowrap">
                     {r.quantity.toLocaleString()}
                   </td>
-                  <td className="px-4 py-5">
+                  <td className="px-2 py-5">
                     <button
                       onClick={() => onDelete(r.id)}
-                      className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors ml-[-18px] mr-[-18px]"
+                      className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
