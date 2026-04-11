@@ -67,7 +67,6 @@ export function InventoryPage() {
       barcode: currentProduct.barcode,
       code: currentProduct.code,
       name: currentProduct.name,
-      category: currentProduct.category || "기타",
       quantity: qty,
       date: now.toLocaleDateString("ko-KR"),
       time: now.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
@@ -183,10 +182,8 @@ export function InventoryPage() {
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">{currentProduct.code}</span>
-                    <span className="text-xs text-muted-foreground">{currentProduct.category || "기타"}</span>
                   </div>
                   <h3 className="text-xl font-bold text-foreground">{currentProduct.name}</h3>
-                  <p className="text-sm font-bold text-muted-foreground mt-0.5">{currentProduct.code}</p>
                   <p className="text-xs text-muted-foreground mt-0.5 font-mono">{currentProduct.barcode}</p>
                 </div>
               </div>
