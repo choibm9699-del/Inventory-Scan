@@ -141,7 +141,7 @@ export function InventoryPage() {
               <input
                 id="barcode-input"
                 type="text"
-                className="w-full pl-9 pr-3 py-2.5 border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+                className="w-full pl-9 pr-3 py-2.5 border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring text-sm mt-[5px] mb-[5px]"
                 placeholder="바코드 번호 입력 후 Enter"
                 value={barcodeInput}
                 onChange={(e) => setBarcodeInput(e.target.value)}
