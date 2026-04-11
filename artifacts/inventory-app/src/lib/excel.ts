@@ -8,8 +8,6 @@ export function exportToExcel(records: InventoryRecord[], filename = "재고조�
     바코드: r.barcode,
     상품코드: r.code,
     상품명: r.name,
-    분류: r.category,
-    단위: r.unit,
     수량: r.quantity,
   }));
 
@@ -17,7 +15,7 @@ export function exportToExcel(records: InventoryRecord[], filename = "재고조�
 
   const colWidths = [
     { wch: 12 }, { wch: 10 }, { wch: 18 }, { wch: 10 },
-    { wch: 20 }, { wch: 12 }, { wch: 8 }, { wch: 8 },
+    { wch: 20 }, { wch: 8 },
   ];
   ws["!cols"] = colWidths;
 
