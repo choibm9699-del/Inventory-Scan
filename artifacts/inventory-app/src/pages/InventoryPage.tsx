@@ -31,7 +31,7 @@ export function InventoryPage() {
     year: "numeric",
     month: "long",
     day: "numeric",
-  }).replace(/\s+/g, "-");
+  }).replace(/\s+/g, "-").replace(/년|월|일/g, "");
 
   function handleSearch(barcode?: string) {
     const code = (barcode ?? barcodeInput).trim();
