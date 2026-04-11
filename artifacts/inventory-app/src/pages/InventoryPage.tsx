@@ -27,6 +27,11 @@ export function InventoryPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   const quantityRef = useRef<HTMLInputElement>(null);
+  const todayLabel = new Date().toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
   function handleSearch(barcode?: string) {
     const code = (barcode ?? barcodeInput).trim();
@@ -242,7 +247,7 @@ export function InventoryPage() {
             }`}
           >
             <List className="w-4 h-4" />
-            오늘
+            오늘 {todayLabel}
           </button>
           <button
             onClick={() => setViewMode("calendar")}
