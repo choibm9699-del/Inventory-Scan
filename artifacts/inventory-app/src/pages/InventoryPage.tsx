@@ -187,6 +187,7 @@ export function InventoryPage() {
                     <span className="text-xs text-muted-foreground">{currentProduct.category || "기타"}</span>
                   </div>
                   <h3 className="text-xl font-bold text-foreground">{currentProduct.name}</h3>
+                  <p className="text-sm font-bold text-muted-foreground mt-0.5">{currentProduct.code}</p>
                   <p className="text-xs text-muted-foreground mt-0.5 font-mono">{currentProduct.barcode}</p>
                 </div>
               </div>
