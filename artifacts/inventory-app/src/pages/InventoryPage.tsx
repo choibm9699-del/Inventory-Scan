@@ -12,6 +12,25 @@ import type { Product } from "../types";
 
 type ViewMode = "list" | "calendar";
 
+function getDateKey(date: Date) {
+  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+}
+
+function getCutoffDate() {
+  const date = new Date();
+  date.setDate(date.getDate() - 6);
+  return date;
+}
+
+function isWithinLast7Days(dateStr: string) {
+  const parsed = new Date(dateStr.replace(/\s/g, "").replace(/\.$/, "").split(".").map(Number).join("-"));
+  if (isNaN(parsed.getTime())) return false;
+  const cutoff = getCutoffDate();
+  cutoff.setHours(0, 0, 0, 0);
+  parsed.setHours(0, 0, 0, 0);
+  return parsed >= cutoff;
+}
+
 export function InventoryPage() {
   const { products, addProduct, updateProduct, deleteProduct, searchByBarcode, resetToDefault } = useProducts();
   const { records, addRecord, deleteRecord, clearAll } = useInventory();
@@ -83,6 +102,8 @@ export function InventoryPage() {
     setTimeout(() => setLastSaved(null), 3000);
     document.getElementById("barcode-input")?.focus();
   }
+
+  const recentRecords = records.filter((record) => isWithinLast7Days(record.date));
 
   return (
     <div className="min-h-screen bg-background">
@@ -249,14 +270,14 @@ export function InventoryPage() {
 
         {viewMode === "list" ? (
           <InventoryTable
-            records={records}
+            records={recentRecords}
             onDelete={deleteRecord}
-            onExport={() => exportToExcel(records)}
+            onExport={() => exportToExcel(recentRecords)}
             onClear={clearAll}
           />
         ) : (
           <InventoryCalendar
-            records={records}
+            records={recentRecords}
             onDelete={deleteRecord}
           />
         )}
