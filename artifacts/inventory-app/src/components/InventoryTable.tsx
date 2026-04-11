@@ -13,7 +13,7 @@ export function InventoryTable({ records, onDelete, onExport, onClear }: Invento
 
   return (
     <div className="bg-card rounded-xl border border-card-border shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
+      <div className="flex flex-col gap-2 px-5 py-3.5 border-b border-border">
         <div className="flex items-center gap-2">
           <span className="font-semibold text-card-foreground">재고 기록</span>
           <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{records.length}건</span>
@@ -21,7 +21,7 @@ export function InventoryTable({ records, onDelete, onExport, onClear }: Invento
             <span className="text-xs text-muted-foreground">합계: {totalItems.toLocaleString()}개</span>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center justify-end gap-2">
           {records.length > 0 && (
             <>
               <button
