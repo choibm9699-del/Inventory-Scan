@@ -109,7 +109,11 @@
   * {
     @apply border-border;
   }
+  html {
+    overflow-y: scroll;
+  }
   body {
+    margin: 0;
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
