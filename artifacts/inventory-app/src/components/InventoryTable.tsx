@@ -33,13 +33,6 @@ export function InventoryTable({ records, onDelete, onExport, onClear }: Invento
                 <Barcode className="w-4 h-4" />
                 {showBarcode ? "바코드 숨김" : "바코드 표시"}
               </button>
-              <button
-                onClick={onExport}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
-              >
-                <FileDown className="w-4 h-4" />
-                엑셀 저장
-              </button>
             </>
           )}
         </div>
@@ -86,6 +79,17 @@ export function InventoryTable({ records, onDelete, onExport, onClear }: Invento
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      {records.length > 0 && (
+        <div className="px-5 py-3 border-t border-border flex justify-end">
+          <button
+            onClick={onExport}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+          >
+            <FileDown className="w-4 h-4" />
+            엑셀 저장
+          </button>
         </div>
       )}
     </div>
