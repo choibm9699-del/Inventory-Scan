@@ -82,6 +82,8 @@ export function InventoryPage() {
     document.getElementById("barcode-input")?.focus();
   }
 
+  const isCalendarView = viewMode === "calendar";
+
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
       {showScanner && (
@@ -139,23 +141,35 @@ export function InventoryPage() {
               <input
                 id="barcode-input"
                 type="text"
-                className="w-full pl-9 pr-3 py-2.5 border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring text-sm mt-[5px] mb-[5px]"
+                disabled={isCalendarView}
+                className={`w-full pl-9 pr-3 py-2.5 border border-input rounded-lg text-sm mt-[5px] mb-[5px] ${
+                  isCalendarView
+                    ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60"
+                    : "bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                }`}
                 placeholder="바코드 번호 입력 후 Enter"
                 value={barcodeInput}
                 onChange={(e) => setBarcodeInput(e.target.value)}
                 onKeyDown={handleBarcodeKeyDown}
                 autoComplete="off"
+                aria-disabled={isCalendarView}
               />
             </div>
             <button
               onClick={() => handleSearch()}
-              className="px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity ml-[0px] mr-[0px] text-[17px] pl-[26px] pr-[26px] pt-[12px] pb-[12px]"
+              disabled={isCalendarView}
+              className={`px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium transition-opacity ml-[0px] mr-[0px] text-[17px] pl-[26px] pr-[26px] pt-[12px] pb-[12px] ${
+                isCalendarView ? "opacity-50 cursor-not-allowed" : "hover:opacity-90"
+              }`}
             >
               검색
             </button>
             <button
               onClick={() => setShowScanner(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-sidebar text-sidebar-foreground rounded-lg font-medium hover:opacity-90 transition-opacity text-[17px] pl-[16px] pr-[16px]"
+              disabled={isCalendarView}
+              className={`flex items-center gap-1.5 px-4 py-2.5 bg-sidebar text-sidebar-foreground rounded-lg font-medium transition-opacity text-[17px] pl-[16px] pr-[16px] ${
+                isCalendarView ? "opacity-50 cursor-not-allowed" : "hover:opacity-90"
+              }`}
             >
               <Camera className="w-4 h-4" />
               카메라
