@@ -294,8 +294,8 @@ export function ProductManager({ products, onAdd, onUpdate, onDelete, onReset, o
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm">
               <tr>
-                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">바코드</th>
-                <th className="text-left px-3 py-2.5 font-medium text-muted-foreground text-xs">상품명 / 코드</th>
+                <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs text-center">바코드</th>
+                <th className="px-3 py-2.5 font-medium text-muted-foreground text-xs text-center">상품명 / 코드</th>
                 <th className="px-3 py-2.5" />
               </tr>
             </thead>
@@ -304,8 +304,8 @@ export function ProductManager({ products, onAdd, onUpdate, onDelete, onReset, o
                 <tr key={p.barcode} className="border-t border-border hover:bg-muted/30 transition-colors">
                   {editingBarcode === p.barcode && editForm ? (
                     <>
-                      <td className="px-4 py-2 font-mono text-xs text-muted-foreground">{p.barcode}</td>
-                      <td className="px-3 py-2">
+                      <td className="px-4 py-2 font-mono text-xs text-muted-foreground text-center">{p.barcode}</td>
+                      <td className="px-3 py-2 text-center">
                         <div className="text-sm font-bold">{editForm.name}</div>
                         <input className="w-full mt-1 px-2 py-1 text-xs border border-input rounded bg-background" value={editForm.code} onChange={(e) => setEditForm((f) => f ? { ...f, code: e.target.value } : f)} />
                       </td>
@@ -318,8 +318,8 @@ export function ProductManager({ products, onAdd, onUpdate, onDelete, onReset, o
                     </>
                   ) : (
                     <>
-                      <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">{p.barcode}</td>
-                      <td className="px-3 py-2.5">
+                      <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground text-center">{p.barcode}</td>
+                      <td className="px-3 py-2.5 text-center">
                         <div className="text-sm font-bold text-foreground">{p.name}</div>
                         <div className="text-sm font-bold text-muted-foreground">{p.code}</div>
                       </td>
