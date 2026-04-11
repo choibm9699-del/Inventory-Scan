@@ -64,7 +64,6 @@ export function InventoryTable({ records, onDelete, onExport, onClear }: Invento
                   </td>
                   <td className="px-4 py-5 text-center text-base font-bold tabular-nums">
                     {r.quantity.toLocaleString()}
-                    <span className="text-xs font-normal text-muted-foreground ml-1">{r.unit}</span>
                   </td>
                   <td className="px-4 py-5">
                     <button
