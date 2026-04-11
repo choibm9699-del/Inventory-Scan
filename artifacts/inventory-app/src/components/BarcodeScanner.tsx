@@ -90,7 +90,7 @@ export function BarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
               />
               {scanning && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-52 h-28 border-2 border-primary/80 rounded-lg shadow-[0_0_0_1000px_rgba(0,0,0,0.4)]">
+                  <div className="w-[240px] h-[134px] border-2 border-primary/80 rounded-lg shadow-[0_0_0_1000px_rgba(0,0,0,0.4)]">
                     <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-primary rounded-tl" />
                     <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-primary rounded-tr" />
                     <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-primary rounded-bl" />
