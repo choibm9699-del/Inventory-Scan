@@ -23,7 +23,7 @@ export function InventoryTable({ records, onDelete, onExport, onClear }: Invento
             <span className="text-xs text-muted-foreground">합계: {totalItems.toLocaleString()}개</span>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2 ml-auto">
           {records.length > 0 && (
             <>
               <button
