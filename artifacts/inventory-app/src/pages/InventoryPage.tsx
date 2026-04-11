@@ -68,7 +68,6 @@ export function InventoryPage() {
       code: currentProduct.code,
       name: currentProduct.name,
       category: currentProduct.category || "기타",
-      unit: currentProduct.unit || "개",
       quantity: qty,
       date: now.toLocaleDateString("ko-KR"),
       time: now.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
@@ -195,7 +194,7 @@ export function InventoryPage() {
               <div className="flex gap-3 items-end">
                 <div className="flex-1">
                   <label className="text-xs font-medium text-muted-foreground block mb-1.5">
-                    현재 수량 ({currentProduct.unit || "개"})
+                    현재 수량
                   </label>
                   <input
                     ref={quantityRef}

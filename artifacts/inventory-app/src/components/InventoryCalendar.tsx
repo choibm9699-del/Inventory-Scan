@@ -221,7 +221,6 @@ export function InventoryCalendar({ records, onDelete }: InventoryCalendarProps)
                     <div className="flex items-center gap-2 ml-3 shrink-0">
                       <div className="text-right">
                         <span className="text-base font-bold tabular-nums">{r.quantity.toLocaleString()}</span>
-                        <span className="text-xs text-muted-foreground ml-1">{r.unit}</span>
                       </div>
                       <button
                         onClick={() => onDelete(r.id)}
