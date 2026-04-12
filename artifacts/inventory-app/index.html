@@ -16,26 +16,47 @@
     />
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <input id="barcodeInput" placeholder="바코드">
+    <input id="quantityRef" placeholder="수량">
+
+    <button onclick="handleSave()">저장</button>
+    <button onclick="fileInputRef()">불러오기</button>
+
+    <ul id="list"></ul>
+
+    <script>
+    function handleSave() {
+      const data = {
+        barcode: document.getElementById("barcodeInput").value,
+        qty: document.getElementById("quantityRef").value
+      };
+
+      fetch("/save", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+      }).then(() => alert("저장됨"));
+    }
+      function fileInputRef() {
+        fetch("/load")
+          .then(res => res.json())
+          .then(data => {
+            const list = document.getElementById("list");
+            list.innerHTML = "";
+
+            data.forEach(item => {
+              const li = document.createElement("li");
+              li.innerText = item.barcode + " / " + item.qty;
+              list.appendChild(li);
+            });
+          });
+      }
+      </script>
+
+
+    
   </body>
-  <script type="module">
-    // Import the functions you need from the SDKs you need
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-    // TODO: Add SDKs for Firebase products that you want to use
-    // https://firebase.google.com/docs/web/setup#available-libraries
-
-    // Your web app's Firebase configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyC6Uiiu7i-nNDqkbBy6AMxIxmAMjWTAppI",
-      authDomain: "inventory-list-be60b.firebaseapp.com",
-      projectId: "inventory-list-be60b",
-      storageBucket: "inventory-list-be60b.firebasestorage.app",
-      messagingSenderId: "170516448921",
-      appId: "1:170516448921:web:19fc79255c03aced615a08",
-    };
-
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-  </script>
+ 
 </html>
