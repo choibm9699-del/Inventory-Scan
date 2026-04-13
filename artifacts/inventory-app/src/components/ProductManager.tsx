@@ -128,8 +128,8 @@ export function ProductManager({
 
   function downloadTemplate() {
     const template = [
-      { 바코드: "8801234567890", 상품코드: "P001", 상품명: "생수 500ml" },
-      { 바코드: "8809876543210", 상품코드: "P002", 상품명: "콜라 1.5L" },
+      { 바코드: "8801043015899", 상품코드: "101002333", 상품명: "안성탕면컵" },
+      { 바코드: "8801043015936", 상품코드: "101003561", 상품명: "김치큰사발" },
     ];
     const ws = XLSX.utils.json_to_sheet(template);
     ws["!cols"] = [{ wch: 18 }, { wch: 12 }, { wch: 24 }];
@@ -138,21 +138,58 @@ export function ProductManager({
     XLSX.writeFile(wb, "상품목록_템플릿.xlsx");
   }
 
+  function downloadProducts() {
+    if (products.length === 0) {
+      alert("다운로드할 상품 데이터가 없습니다.");
+      return;
+    }
+
+    // 1. DB 데이터를 엑셀용 데이터로 변환 (한글 헤더 적용)
+    const excelData = products.map((p) => ({
+      바코드: p.barcode,
+      상품코드: p.code,
+      상품명: p.name,
+    }));
+
+    // 2. 워크시트 생성
+    const ws = XLSX.utils.json_to_sheet(excelData);
+
+    // 3. 열 너비 자동 조절 (보기 좋게)
+    ws["!cols"] = [{ wch: 18 }, { wch: 15 }, { wch: 30 }];
+
+    // 4. 워크북 생성 및 저장
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "현재상품목록");
+
+    // 파일명에 오늘 날짜를 넣어주면 관리하기 편합니다.
+    const today = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `상품목록_${today}.xlsx`);
+  }
+
+
+  
   function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // 1. 사용자 확인 (기존 데이터 삭제 경고)
+    if (!window.confirm("엑셀 업로드 시 기존 상품 목록이 모두 지워지고 새 목록으로 교체됩니다. 진행하시겠습니까?")) {
+      e.target.value = "";
+      return;
+    }
+
     setUploadResult(null);
 
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
         const data = new Uint8Array(evt.target!.result as ArrayBuffer);
         const wb = XLSX.read(data, { type: "array" });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws);
 
+        const newProducts: Record<string, Product> = {}; // DB에 통째로 넣을 객체
         let added = 0;
-        let skipped = 0;
         const errors: string[] = [];
 
         rows.forEach((row, idx) => {
@@ -162,32 +199,37 @@ export function ProductManager({
           const name = String(row["상품명"] ?? row["name"] ?? "").trim();
 
           if (!barcode || !code || !name) {
-            errors.push(`${rowNum}행: 바코드, 상품코드, 상품명은 필수입니다.`);
+            errors.push(`${rowNum}행: 필수 정보 누락으로 제외됨`);
             return;
           }
 
-          if (products.find((p) => p.barcode === barcode)) {
-            skipped++;
-            return;
-          }
-
-          onAdd({ barcode, code, name });
+          // 중복된 바코드가 엑셀 안에 있다면 마지막 것으로 덮어씌워짐
+          newProducts[barcode] = { barcode, code, name };
           added++;
         });
 
-        setUploadResult({ added, skipped, errors });
-      } catch {
+        // 2. 핵심 변경 사항: update 대신 'set'을 사용하여 products 경로를 통째로 교체
+        // 'set'은 해당 경로의 이전 데이터를 싹 지우고 새로 들어온 데이터만 저장합니다.
+        const { set, ref: dbRef_orig } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js");
+        await set(dbRef_orig(db, "products"), newProducts);
+
+        setUploadResult({ added, skipped: 0, errors });
+        alert("상품 목록이 엑셀 데이터로 완전히 교체되었습니다.");
+
+        // 화면을 새로고침하거나 부모 상태를 업데이트하기 위해 onClose 호출 (선택 사항)
+        // onClose(); 
+      } catch (err) {
+        console.error(err);
         setUploadResult({
           added: 0,
           skipped: 0,
-          errors: ["파일을 읽을 수 없습니다. 올바른 엑셀 파일인지 확인하세요."],
+          errors: ["파일 처리 중 오류가 발생했습니다."],
         });
       }
     };
     reader.readAsArrayBuffer(file);
     e.target.value = "";
   }
-
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
       <div className="bg-card rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
@@ -216,21 +258,23 @@ export function ProductManager({
               setError("");
               setUploadResult(null);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+            className="flex items-center gap-1.5 px-2 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
           >
             <Plus className="w-4 h-4" />
             상품 추가
           </button>
+          
+          {/* 현데이터 다운로드 버튼 - 업로드 버튼과 같은 스타일 적용 */}
           <button
-            onClick={downloadTemplate}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+            onClick={downloadProducts}
+            className="flex items-center gap-1.5 px-1 py-2 bg-sidebar text-sidebar-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
           >
             <Download className="w-4 h-4" />
-            템플릿 다운로드
+            엑셀 다운로드
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-sidebar text-sidebar-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+            className="flex items-center gap-1.5 px-1 py-2 bg-sidebar text-sidebar-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
           >
             <Upload className="w-4 h-4" />
             엑셀 업로드
@@ -246,20 +290,28 @@ export function ProductManager({
             onClick={() => {
               if (confirm("기본 샘플 데이터로 초기화하시겠습니까?")) onReset();
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-muted text-muted-foreground rounded-lg text-sm font-medium hover:bg-muted/80 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 bg-muted text-muted-foreground rounded-lg text-sm font-medium hover:bg-muted/80 transition-colors"
           >
             초기화
           </button>
+          
           <button
             onClick={() => {
               setShowChangePw((v) => !v);
               setPwError("");
               setPwSuccess(false);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-muted text-muted-foreground rounded-lg text-sm font-medium hover:bg-muted/80 transition-colors ml-auto"
+            className="flex items-center gap-1.5 px-3 py-2 bg-muted text-muted-foreground rounded-lg text-sm font-medium hover:bg-muted/80 transition-colors ml-auto"
           >
             <KeyRound className="w-4 h-4" />
-            비밀번호 변경
+            
+          </button>
+          <button
+            onClick={downloadTemplate}
+            className="flex items-center gap-1.5 px-2.5 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            템플릿
           </button>
         </div>
 
@@ -350,7 +402,7 @@ export function ProductManager({
               <Upload className="w-4 h-4 text-primary" />
               업로드 결과:{" "}
               <span className="text-green-600">
-                {uploadResult.added}개 추가
+                {uploadResult.added}개로 변경
               </span>
               {uploadResult.skipped > 0 && (
                 <span className="text-muted-foreground">
@@ -375,11 +427,11 @@ export function ProductManager({
             <div className="grid grid-cols-3 gap-2 mb-2">
               <div>
                 <label className="text-xs font-medium text-muted-foreground">
-                  바코드 *
+                  박스바코드 *
                 </label>
                 <input
                   className="w-full mt-1 px-3 py-1.5 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="바코드 번호"
+                  placeholder="바코드"
                   value={form.barcode}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, barcode: e.target.value }))
@@ -392,7 +444,7 @@ export function ProductManager({
                 </label>
                 <input
                   className="w-full mt-1 px-3 py-1.5 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="P001"
+                  placeholder="상품코드"
                   value={form.code}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, code: e.target.value }))

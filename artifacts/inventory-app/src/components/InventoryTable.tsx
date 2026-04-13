@@ -98,7 +98,7 @@ export function InventoryTable({
                     </td>
                   )}
                   <td className="px-4 py-4 text-center">
-                    <div className="text-[15px] font-bold text-gray-900 leading-tight">
+                    <div className="text-[18px] font-bold text-gray-900 leading-tight">
                       {r.name}
                     </div>
                     <div className="mt-1">
@@ -107,7 +107,7 @@ export function InventoryTable({
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-4 text-center text-[17px] font-black text-black tabular-nums">
+                  <td className="px-4 py-4 text-center text-[20px] font-black text-black tabular-nums">
                     {Number(r.quantity).toLocaleString()}
                   </td>
                   <td className="px-4 py-4 text-center">
