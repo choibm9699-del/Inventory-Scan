@@ -1,5 +1,11 @@
 import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight, FileDown, Trash2, CalendarDays } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  FileDown,
+  Trash2,
+  CalendarDays,
+} from "lucide-react";
 import type { InventoryRecord } from "../types";
 import { exportToExcel } from "../lib/excel";
 
@@ -9,11 +15,24 @@ interface InventoryCalendarProps {
 }
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
-const MONTH_NAMES = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
+const MONTH_NAMES = [
+  "1월",
+  "2월",
+  "3월",
+  "4월",
+  "5월",
+  "6월",
+  "7월",
+  "8월",
+  "9월",
+  "10월",
+  "11월",
+  "12월",
+];
 
 function parseKoreanDate(dateStr: string): Date | null {
   // "2026. 4. 8." -> year=2026, month=4, day=8
-  const cleaned = dateStr.replace(/\s/g, "").replace(/\.$/,"");
+  const cleaned = dateStr.replace(/\s/g, "").replace(/\.$/, "");
   const parts = cleaned.split(".");
   if (parts.length < 3) return null;
   const [y, m, d] = parts.map(Number);
@@ -31,11 +50,16 @@ function recordToDateKey(dateStr: string): string | null {
   return toDateKey(d);
 }
 
-export function InventoryCalendar({ records, onDelete }: InventoryCalendarProps) {
+export function InventoryCalendar({
+  records,
+  onDelete,
+}: InventoryCalendarProps) {
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
-  const [selectedKey, setSelectedKey] = useState<string | null>(toDateKey(today));
+  const [selectedKey, setSelectedKey] = useState<string | null>(
+    toDateKey(today),
+  );
 
   const recordsByDate = useMemo(() => {
     const map = new Map<string, InventoryRecord[]>();
@@ -49,12 +73,16 @@ export function InventoryCalendar({ records, onDelete }: InventoryCalendarProps)
   }, [records]);
 
   function prevMonth() {
-    if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); }
-    else setViewMonth(m => m - 1);
+    if (viewMonth === 0) {
+      setViewYear((y) => y - 1);
+      setViewMonth(11);
+    } else setViewMonth((m) => m - 1);
   }
   function nextMonth() {
-    if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); }
-    else setViewMonth(m => m + 1);
+    if (viewMonth === 11) {
+      setViewYear((y) => y + 1);
+      setViewMonth(0);
+    } else setViewMonth((m) => m + 1);
   }
 
   const firstDay = new Date(viewYear, viewMonth, 1);
@@ -64,7 +92,9 @@ export function InventoryCalendar({ records, onDelete }: InventoryCalendarProps)
 
   const todayKey = toDateKey(today);
 
-  const selectedRecords = selectedKey ? (recordsByDate.get(selectedKey) ?? []) : [];
+  const selectedRecords = selectedKey
+    ? (recordsByDate.get(selectedKey) ?? [])
+    : [];
   const selectedTotal = selectedRecords.reduce((s, r) => s + r.quantity, 0);
 
   function formatSelectedLabel() {
@@ -88,7 +118,9 @@ export function InventoryCalendar({ records, onDelete }: InventoryCalendarProps)
         <div className="flex items-center gap-3">
           <span className="font-semibold text-card-foreground">캘린더</span>
           {monthRecordCount > 0 && (
-            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">이번 달 {monthRecordCount}건</span>
+            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+              이번 달 {monthRecordCount}건
+            </span>
           )}
         </div>
       </div>
@@ -97,13 +129,19 @@ export function InventoryCalendar({ records, onDelete }: InventoryCalendarProps)
         {/* Calendar grid */}
         <div className="flex-1 p-4 border-b lg:border-b-0 lg:border-r border-border">
           <div className="flex items-center justify-between mb-4">
-            <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+            <button
+              onClick={prevMonth}
+              className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+            >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <span className="font-bold text-base">
               {viewYear}년 {MONTH_NAMES[viewMonth]}
             </span>
-            <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+            <button
+              onClick={nextMonth}
+              className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+            >
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
@@ -156,8 +194,12 @@ export function InventoryCalendar({ records, onDelete }: InventoryCalendarProps)
                         ))
                       ) : (
                         <>
-                          <span className={`w-1 h-1 rounded-full ${isSelected ? "bg-primary-foreground/70" : "bg-primary"}`} />
-                          <span className={`text-[9px] font-bold leading-none ${isSelected ? "text-primary-foreground/80" : "text-primary"}`}>
+                          <span
+                            className={`w-1 h-1 rounded-full ${isSelected ? "bg-primary-foreground/70" : "bg-primary"}`}
+                          />
+                          <span
+                            className={`text-[9px] font-bold leading-none ${isSelected ? "text-primary-foreground/80" : "text-primary"}`}
+                          >
                             {dayRecords!.length}
                           </span>
                         </>
@@ -185,13 +227,23 @@ export function InventoryCalendar({ records, onDelete }: InventoryCalendarProps)
               </div>
               {selectedRecords.length > 0 && (
                 <div className="text-xs text-muted-foreground mt-0.5">
-                  {selectedRecords.length}건 · 합계 {selectedTotal.toLocaleString()}
+                  {selectedRecords.length}건 · 합계{" "}
+                  {selectedTotal.toLocaleString()}
                 </div>
               )}
             </div>
             {selectedRecords.length > 0 && (
               <button
-                onClick={() => exportToExcel(selectedRecords, formatSelectedLabel().replace(/\s/g, "") + "_재고조사")}
+                onClick={() => {
+                  // 1. 선택된 날짜(selectedKey: "2026-4-14")를 기반으로 자릿수 맞추기
+                  if (!selectedKey) return;
+
+                  const [y, m, d] = selectedKey.split("-");
+                  const formattedDate = `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+
+                  // 2. 0000-00-00_재고조사 형식으로 내보내기
+                  exportToExcel(selectedRecords, `${formattedDate}_재고조사`);
+                }}
                 className="flex items-center gap-1 px-2.5 py-1.5 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700 transition-colors"
               >
                 <FileDown className="w-3.5 h-3.5" />
@@ -209,18 +261,31 @@ export function InventoryCalendar({ records, onDelete }: InventoryCalendarProps)
             ) : (
               <ul className="divide-y divide-border">
                 {selectedRecords.map((r) => (
-                  <li key={r.id} className="flex items-center justify-between px-4 py-3 hover:bg-muted/20 transition-colors">
+                  <li
+                    key={r.id}
+                    className="flex items-center justify-between px-4 py-3 hover:bg-muted/20 transition-colors"
+                  >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 mb-0.5">
-                        <span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded">{r.code}</span>
-                        <span className="text-xs text-muted-foreground">{r.time}</span>
+                        <span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                          {r.code}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {r.time}
+                        </span>
                       </div>
-                      <div className="text-sm font-medium text-foreground truncate">{r.name}</div>
-                      <div className="text-xs font-mono text-muted-foreground">{r.barcode}</div>
+                      <div className="text-sm font-medium text-foreground truncate">
+                        {r.name}
+                      </div>
+                      <div className="text-xs font-mono text-muted-foreground">
+                        {r.barcode}
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 ml-3 shrink-0">
                       <div className="text-right">
-                        <span className="text-base font-bold tabular-nums">{r.quantity.toLocaleString()}</span>
+                        <span className="text-base font-bold tabular-nums">
+                          {r.quantity.toLocaleString()}
+                        </span>
                       </div>
                       <button
                         onClick={() => onDelete(r.id)}

@@ -1,19 +1,23 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
-import { Lock, X, Eye, EyeOff } from "lucide-react";
+import { Lock, X, Eye, EyeOff, Loader2 } from "lucide-react";
+import { db } from "../firebase.ts"; 
+import { ref as dbRef, get, child, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+const changePassword = async (newPw: string) => {
+  try {
+    const updates = {};
+    updates['/admin_settings/config/adminPassword'] = newPw;
+
+    await update(dbRef(db), updates);
+    alert("비밀번호가 성공적으로 변경되었습니다.");
+  } catch (error) {
+    alert("변경 실패: " + error.message);
+  }
+};
 
 interface PasswordModalProps {
   onSuccess: () => void;
   onClose: () => void;
-}
-
-const PASSWORD_KEY = "inventory_admin_password";
-
-export function getAdminPassword(): string {
-  return localStorage.getItem(PASSWORD_KEY) ?? "1234";
-}
-
-export function setAdminPassword(pw: string) {
-  localStorage.setItem(PASSWORD_KEY, pw);
 }
 
 export function PasswordModal({ onSuccess, onClose }: PasswordModalProps) {
@@ -21,14 +25,41 @@ export function PasswordModal({ onSuccess, onClose }: PasswordModalProps) {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState(false);
   const [shake, setShake] = useState(false);
+  const [dbPassword, setDbPassword] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // 로딩 상태 추가
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
+
+    const fetchPassword = async () => {
+      try {
+        const rootRef = dbRef(db);
+        // 사용자님이 설정하신 경로: admin_settings/config
+        const snapshot = await get(child(rootRef, "admin_settings/config"));
+
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          setDbPassword(String(data.adminPassword)); // DB의 2013448을 가져옴
+        } else {
+          setDbPassword("1234"); // 데이터가 없을 경우 비상용
+        }
+      } catch (err) {
+        console.error("DB 연결 실패:", err);
+        setDbPassword("1234");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPassword();
   }, []);
 
   function handleConfirm() {
-    if (input === getAdminPassword()) {
+    if (isLoading) return; // 로딩 중에는 클릭 방지
+
+    // DB에서 가져온 비번(2013448)과 입력값 비교
+    if (dbPassword && input === dbPassword) {
       setError(false);
       onSuccess();
     } else {
@@ -40,17 +71,14 @@ export function PasswordModal({ onSuccess, onClose }: PasswordModalProps) {
     }
   }
 
+  // 엔터 키 지원
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") handleConfirm();
-    if (e.key === "Escape") onClose();
   }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-      <div
-        className={`bg-card rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden ${shake ? "animate-shake" : ""}`}
-        style={shake ? { animation: "shake 0.4s ease" } : {}}
-      >
+      <div className={`bg-card rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden ${shake ? "animate-shake" : ""}`}>
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -73,43 +101,30 @@ export function PasswordModal({ onSuccess, onClose }: PasswordModalProps) {
               className={`w-full pr-10 pl-4 py-2.5 border-2 rounded-xl text-sm bg-background focus:outline-none transition-colors ${
                 error ? "border-destructive focus:border-destructive" : "border-input focus:border-primary"
               }`}
-              placeholder="비밀번호"
+              placeholder={isLoading ? "로딩 중..." : "비밀번호"}
               value={input}
-              onChange={(e) => { setInput(e.target.value); setError(false); }}
+              onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              autoComplete="off"
+              disabled={isLoading}
             />
             <button
               type="button"
               onClick={() => setShowPw((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
             >
               {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
 
-          {error && (
-            <p className="text-xs text-destructive font-medium">비밀번호가 올바르지 않습니다.</p>
-          )}
-
           <button
             onClick={handleConfirm}
-            className="w-full py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:opacity-90 transition-opacity"
+            disabled={isLoading}
+            className="w-full py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-bold flex items-center justify-center"
           >
-            확인
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "확인"}
           </button>
         </div>
       </div>
-
-      <style>{`
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          20% { transform: translateX(-8px); }
-          40% { transform: translateX(8px); }
-          60% { transform: translateX(-6px); }
-          80% { transform: translateX(6px); }
-        }
-      `}</style>
     </div>
   );
 }

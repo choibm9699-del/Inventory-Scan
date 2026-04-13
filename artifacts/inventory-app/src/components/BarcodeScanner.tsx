@@ -6,6 +6,7 @@ interface BarcodeScannerProps {
   onDetected: (barcode: string) => void;
   onClose: () => void;
 }
+// ... 상단 import 동일
 
 export function BarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -17,6 +18,17 @@ export function BarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
     const reader = new BrowserMultiFormatReader();
     readerRef.current = reader;
 
+    // 1. 카메라 제약 조건 설정 (초점 개선 핵심)
+    const constraints: MediaStreamConstraints = {
+      video: {
+        facingMode: "environment", // 후면 카메라 우선
+        width: { ideal: 1280 }, // 고해상도 요청 (초점 정확도 향상)
+        height: { ideal: 720 },
+        // @ts-ignore: 일부 브라우저에서 지원하는 자동 초점 속성
+        focusMode: { ideal: "continuous" },
+      },
+    };
+
     reader
       .listVideoInputDevices()
       .then((devices) => {
@@ -25,25 +37,30 @@ export function BarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
           return;
         }
 
+        // 후면 카메라 찾기 로직 최적화
         const backCamera =
-          devices.find((d) =>
-            d.label.toLowerCase().includes("back") ||
-            d.label.toLowerCase().includes("environment") ||
-            d.label.toLowerCase().includes("rear")
-          ) || devices[devices.length - 1];
+          devices.find((d) => /back|rear|environment/i.test(d.label)) ||
+          devices[devices.length - 1];
 
         setScanning(true);
+
+        // 2. decodeFromVideoDevice 대신 decodeFromConstraints 사용 (설정값 반영)
+        // 기존 deviceId 방식보다 브라우저에게 상세한 카메라 사양을 요청할 수 있습니다.
         reader
-          .decodeFromVideoDevice(backCamera.deviceId, videoRef.current!, (result, err) => {
-            if (result) {
-              const code = result.getText();
-              onDetected(code);
-              reader.reset();
-            }
-            if (err && !(err instanceof NotFoundException)) {
-              console.error(err);
-            }
-          })
+          .decodeFromConstraints(
+            constraints,
+            videoRef.current!,
+            (result, err) => {
+              if (result) {
+                const code = result.getText();
+                onDetected(code);
+                reader.reset();
+              }
+              if (err && !(err instanceof NotFoundException)) {
+                console.error(err);
+              }
+            },
+          )
           .catch((e) => {
             setError("카메라 접근 권한이 필요합니다: " + e.message);
           });
@@ -57,13 +74,16 @@ export function BarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
     };
   }, [onDetected]);
 
+  // ... 하단 UI 코드는 동일 (video 태그의 playsInline 속성은 유지해 주세요)
   return (
     <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
       <div className="bg-card rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <div className="flex items-center gap-2">
             <Camera className="w-5 h-5 text-primary" />
-            <span className="font-semibold text-card-foreground">카메라 스캔</span>
+            <span className="font-semibold text-card-foreground">
+              카메라 스캔
+            </span>
           </div>
           <button
             onClick={onClose}
@@ -90,7 +110,7 @@ export function BarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
               />
               {scanning && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-[240px] h-[134px] border-2 border-primary/80 rounded-lg shadow-[0_0_0_1000px_rgba(0,0,0,0.4)]">
+                  <div className="w-[300px] h-[182px] border-2 border-primary/80 rounded-lg shadow-[0_0_0_1000px_rgba(0,0,0,0.4)]">
                     <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-primary rounded-tl" />
                     <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-primary rounded-tr" />
                     <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-primary rounded-bl" />

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Trash2, FileDown, Barcode } from "lucide-react";
 import type { InventoryRecord } from "../types";
 
@@ -6,7 +6,7 @@ interface InventoryTableProps {
   records: InventoryRecord[];
   onDelete: (id: string) => void;
   onExport: () => void;
-  onClear: () => void; // 부모로부터 전달은 받되 사용은 하지 않음
+  onClear: () => void;
 }
 
 export function InventoryTable({
@@ -16,10 +16,16 @@ export function InventoryTable({
 }: InventoryTableProps) {
   const [showBarcode, setShowBarcode] = useState(false);
 
-  // 합계 계산
-  const totalItems = records
-    ? records.reduce((sum, r) => sum + (Number(r.quantity) || 0), 0)
-    : 0;
+  // 1. 오늘 날짜와 일치하는 데이터만 추출 (과거 데이터 배제)
+  const todayRecords = useMemo(() => {
+    const todayStr = new Date().toLocaleDateString("ko-KR");
+    return records ? records.filter(r => r.date === todayStr) : [];
+  }, [records]);
+
+  // 2. 오직 오늘 입력된 데이터로만 합계 계산
+  const totalItems = useMemo(() => {
+    return todayRecords.reduce((sum, r) => sum + (Number(r.quantity) || 0), 0);
+  }, [todayRecords]);
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -28,16 +34,16 @@ export function InventoryTable({
         <div className="flex items-center gap-2">
           <span className="font-bold text-gray-800">재고 기록</span>
           <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-bold">
-            {records?.length || 0}건
+            {todayRecords.length}건
           </span>
-          {records?.length > 0 && (
+          {todayRecords.length > 0 && (
             <span className="text-xs text-gray-500 font-medium">
               총 {totalItems.toLocaleString()}개
             </span>
           )}
         </div>
 
-        {records?.length > 0 && (
+        {todayRecords.length > 0 && (
           <button
             onClick={() => setShowBarcode((v) => !v)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-lg text-xs font-bold hover:bg-gray-50 transition-colors"
@@ -48,8 +54,8 @@ export function InventoryTable({
         )}
       </div>
 
-      {/* 테이블 영역 */}
-      {!records || records.length === 0 ? (
+      {/* 테이블 영역: todayRecords(오늘 데이터)만 출력 */}
+      {!todayRecords || todayRecords.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
           <FileDown className="w-10 h-10 mb-2 opacity-20" />
           <p className="text-sm">기록된 재고 데이터가 없습니다.</p>
@@ -74,7 +80,7 @@ export function InventoryTable({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {records.map((r) => (
+              {todayRecords.map((r) => (
                 <tr
                   key={r.id}
                   className="hover:bg-gray-50/50 transition-colors"
@@ -94,7 +100,6 @@ export function InventoryTable({
                       </span>
                     </div>
                   </td>
-                  {/* 수량 색상을 검정색(#000000)으로 변경 */}
                   <td className="px-4 py-4 text-center text-[17px] font-black text-black tabular-nums">
                     {Number(r.quantity).toLocaleString()}
                   </td>
@@ -113,8 +118,8 @@ export function InventoryTable({
         </div>
       )}
 
-      {/* 하단 영역: 초기화 버튼 삭제, 엑셀 다운로드만 우측 정렬 */}
-      {records?.length > 0 && (
+      {/* 하단 영역 */}
+      {todayRecords.length > 0 && (
         <div className="px-5 py-4 border-t border-gray-100 flex justify-end bg-gray-50/30">
           <button
             onClick={onExport}

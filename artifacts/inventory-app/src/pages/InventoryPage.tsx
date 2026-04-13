@@ -24,6 +24,7 @@ import {
   ref,
   push,
   serverTimestamp,
+  update,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
 type ViewMode = "list" | "calendar";
@@ -38,7 +39,7 @@ export function InventoryPage() {
     resetToDefault,
   } = useProducts();
   const { records, addRecord, deleteRecord, clearAll } = useInventory();
-
+  const [isSaving, setIsSaving] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState("");
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState("");
@@ -90,54 +91,73 @@ export function InventoryPage() {
     handleSearch(barcode);
   }
 
-  // 이 부분을 찾아서 아래 내용으로 교체하세요!
   async function handleSave() {
-    if (!currentProduct) return;
+    if (!currentProduct || isSaving) return;
+
     const qty = parseFloat(quantity);
-    if (isNaN(qty) || qty < 0) return;
+    if (isNaN(qty) || qty <= 0) return;
+
+    setIsSaving(true);
 
     try {
-      // 1. Firebase 데이터베이스의 'inventory_records' 경로에 연결
-      const inventoryRef = ref(db, "inventory_records");
+      // 1. 오늘 날짜 문자열 생성 (저장 형식과 일치하도록)
+      const todayStr = new Date().toLocaleDateString("ko-KR");
 
-      // 2. 저장할 데이터 구성
-      const newRecord = {
-        barcode: currentProduct.barcode,
-        code: currentProduct.code,
-        name: currentProduct.name,
-        quantity: qty,
-        // serverTimestamp를 쓰면 전 세계 어디서 접속해도 정확한 서버 시간이 기록됩니다.
-        timestamp: serverTimestamp(),
-        date: new Date().toLocaleDateString("ko-KR"),
-        time: new Date().toLocaleTimeString("ko-KR", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      };
+      // 2. [수정] 바코드뿐만 아니라 '오늘 날짜'까지 일치하는 기록이 있는지 확인
+      const existingRecord = records.find(
+        (r) => r.barcode === currentProduct.barcode && r.date === todayStr,
+      );
 
-      // 3. Firebase에 데이터 밀어넣기 (실제 저장!)
-      await push(inventoryRef, newRecord);
+      if (existingRecord && existingRecord.id) {
+        // [업데이트] 오늘 이미 입력한 내역이 있는 경우에만 수량 합산
+        const recordRef = ref(db, `inventory_records/${existingRecord.id}`);
 
-      // 4. (중요) 기존 로컬 상태 업데이트 로직 (화면에 바로 보여주기 위해 유지)
-      addRecord(newRecord);
+        await update(recordRef, {
+          quantity: existingRecord.quantity + qty,
+          timestamp: serverTimestamp(),
+          time: new Date().toLocaleTimeString("ko-KR", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        });
+        console.log("오늘 작업분 수량 합산 완료");
+      } else {
+        // [신규 저장] 오늘 처음 입력하는 바코드이거나 과거 데이터만 있는 경우 새로 생성
+        const inventoryRef = ref(db, "inventory_records");
+        const newRecord = {
+          barcode: currentProduct.barcode,
+          code: currentProduct.code,
+          name: currentProduct.name,
+          quantity: qty,
+          timestamp: serverTimestamp(),
+          date: todayStr, // 오늘 날짜 명시
+          time: new Date().toLocaleTimeString("ko-KR", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        };
+        await push(inventoryRef, newRecord);
+        console.log("새로운 항목 저장 완료");
+      }
 
-      // 5. 저장 후 입력창 초기화 및 알림
-      setLastSaved(currentProduct.name);
+      // 입력창 초기화 및 포커스 이동
+      setLastSaved(`${currentProduct.name} (${qty}개 저장)`);
       setBarcodeInput("");
       setCurrentProduct(null);
       setQuantity("");
       setSearchState("idle");
 
       setTimeout(() => setLastSaved(null), 3000);
-      document.getElementById("barcode-input")?.focus();
-
-      console.log("Firebase 저장 성공!");
+      setTimeout(() => {
+        document.getElementById("barcode-input")?.focus();
+      }, 100);
     } catch (error) {
-      console.error("Firebase 저장 에러:", error);
-      alert("데이터베이스 저장에 실패했습니다.");
+      console.error("저장 에러:", error);
+      alert("데이터 처리에 실패했습니다.");
+    } finally {
+      setIsSaving(false);
     }
   }
-
   const isCalendarView = viewMode === "calendar";
 
   return (
@@ -172,7 +192,11 @@ export function InventoryPage() {
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between w-full">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
-              <ClipboardList className="w-4.5 h-4.5 text-white" />
+              <img
+                src="/icon512.png"
+                alt="아이콘"
+                className="w-full h-full object-cover"
+              />
             </div>
             <div>
               <h1 className="font-bold text-lg leading-tight">현장 재고조사</h1>
@@ -295,10 +319,10 @@ export function InventoryPage() {
                 </div>
                 <button
                   onClick={handleSave}
-                  disabled={!quantity || parseFloat(quantity) < 0}
+                  disabled={!quantity || parseFloat(quantity) < 0 || isSaving} // isSaving 추가
                   className="px-8 py-3 bg-primary text-primary-foreground rounded-xl text-base font-bold hover:opacity-90 disabled:opacity-40"
                 >
-                  저장
+                  {isSaving ? "저장 중..." : "저장"}
                 </button>
               </div>
             </div>
@@ -316,7 +340,7 @@ export function InventoryPage() {
             }`}
           >
             <List className="w-4 h-4" />
-            오늘
+            오늘 [{todayLabel}]
           </button>
           <button
             onClick={() => setViewMode("calendar")}
@@ -335,7 +359,14 @@ export function InventoryPage() {
           <InventoryTable
             records={records}
             onDelete={deleteRecord}
-            onExport={() => exportToExcel(records)}
+            onExport={() => {
+              // 1. 현재 날짜를 "2026-4-14" 형식으로 만듭니다.
+              const now = new Date();
+              const dateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+
+              // 2. 파일명 뒤에 날짜를 붙여서 내보냅니다.
+              exportToExcel(records, `${dateStr}_재고조사`);
+            }}
             onClear={clearAll}
           />
         ) : (
