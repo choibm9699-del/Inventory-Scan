@@ -120,7 +120,7 @@ export function InventoryPage() {
       alert("마감 처리 중 문제가 발생했습니다.");
     }
   };
-  
+
   const handleActualUnlock = async () => {
     const now = new Date();
     const dateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
@@ -253,8 +253,8 @@ export function InventoryPage() {
 
       <header className="bg-sidebar text-sidebar-foreground shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between w-full">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
+          <div className="flex items-center gap-1">
+            <div className="w-9 h-9 bg-sidebar-primary rounded-lg flex items-center justify-center">
               <img
                 src="/icon512.png"
                 alt="아이콘"
@@ -279,11 +279,16 @@ export function InventoryPage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-5 w-full overflow-x-hidden">
-        {/* Scan section */}
+        {showScanner && (
+          <BarcodeScanner
+            onDetected={handleScanDetected}
+            onClose={() => setShowScanner(false)}
+          />
+        )}
         <div className="bg-card border border-card-border rounded-xl shadow-sm p-5">
           <h2 className="font-semibold text-sm text-muted-foreground mb-4 flex items-center gap-2">
             <Barcode className="w-4 h-4" />
-            바코드 스캔 / 입력
+            바코드 입력 / 스캔
           </h2>
 
           <div className="flex gap-2 mb-4">
@@ -298,7 +303,7 @@ export function InventoryPage() {
                     ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60"
                     : "bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                 }`}
-                placeholder="바코드 번호 입력 후 Enter"
+                placeholder="바코드 입력 후 Enter"
                 value={barcodeInput}
                 onChange={(e) => setBarcodeInput(e.target.value)}
                 onKeyDown={handleBarcodeKeyDown}
@@ -308,13 +313,13 @@ export function InventoryPage() {
             <button
               onClick={() => handleSearch()}
               disabled={isCalendarView || isLocked}
-              className={`px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium transition-opacity ${
+              className={`px-4.5 py-1.5 bg-primary text-primary-foreground rounded-lg font-medium transition-opacity ${
                 isCalendarView || isLocked
                   ? "opacity-50 cursor-not-allowed"
                   : "hover:opacity-90"
               }`}
             >
-              검색
+              검 색
             </button>
             <button
               onClick={() => setShowScanner(true)}

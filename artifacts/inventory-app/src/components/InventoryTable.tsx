@@ -17,16 +17,16 @@ export function InventoryTable({
   onDelete,
   onExport,
   isLocked,
-    onLock,
+  onLock,
   onUnlock,
 }: InventoryTableProps) {
   const [showBarcode, setShowBarcode] = useState(false);
 
   // 1. 오늘 날짜와 일치하는 데이터만 추출 (과거 데이터 배제)
-  
+
   const todayRecords = useMemo(() => {
     const todayStr = new Date().toLocaleDateString("ko-KR");
-    return records ? records.filter(r => r.date === todayStr) : [];
+    return records ? records.filter((r) => r.date === todayStr) : [];
   }, [records]);
 
   // 2. 오직 오늘 입력된 데이터로만 합계 계산
@@ -112,13 +112,13 @@ export function InventoryTable({
                   </td>
                   <td className="px-4 py-4 text-center">
                     {!isLocked && (
-                    <button
-                      onClick={() => onDelete(r.id)}
-                      className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  )}
+                      <button
+                        onClick={() => onDelete(r.id)}
+                        className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -134,19 +134,23 @@ export function InventoryTable({
             onClick={() => {
               if (isLocked) {
                 // 이미 마감된 상태라면 해제 함수 실행
-                onUnlock(); 
+                onUnlock();
               } else {
                 // 마감 전이라면 마감 확인창 띄우기
-              if (window.confirm("재고조사를 완료하시겠습니까?\n완료 후에는 수정 및 삭제가 불가능합니다.")) {
-                onLock(); // ◀ 부모(Page)의 setIsLocked(true)를 실행시키는 명령입니다.
+                if (
+                  window.confirm(
+                    "재고조사를 완료하시겠습니까?\n완료 후에는 수정 및 삭제가 불가능합니다.",
+                  )
+                ) {
+                  onLock(); // ◀ 부모(Page)의 setIsLocked(true)를 실행시키는 명령입니다.
                 }
               }
             }}
-              // 이제 마감 상태여도 클릭은 가능해야 하므로 disabled={isLocked}를 지웁니다!
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-black transition-all active:scale-95 ${
-                isLocked 
-                  ? "bg-gray-400 text-white hover:bg-gray-500" // 마감 시에도 호버 효과 추가
-                  : "bg-red-500 text-white hover:bg-red-600 shadow-lg"
+            // 이제 마감 상태여도 클릭은 가능해야 하므로 disabled={isLocked}를 지웁니다!
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-black transition-all active:scale-95 ${
+              isLocked
+                ? "bg-gray-400 text-white hover:bg-gray-500" // 마감 시에도 호버 효과 추가
+                : "bg-red-400 text-black hover:bg-red-600 shadow-lg"
             }`}
           >
             <CheckCircle className="w-4 h-4" />
@@ -154,7 +158,7 @@ export function InventoryTable({
           </button>
           <button
             onClick={onExport}
-            className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-xl text-sm font-black hover:bg-green-700 shadow-lg shadow-green-100 transition-all active:scale-95"
+            className="flex items-center gap-2 px-4 py-2.5 bg-green-400 text-black rounded-xl text-sm font-black hover:bg-green-700 shadow-lg shadow-green-100 transition-all active:scale-95"
           >
             <FileDown className="w-4 h-4" />
             엑셀 다운로드

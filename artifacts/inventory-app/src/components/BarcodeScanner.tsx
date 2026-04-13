@@ -18,62 +18,51 @@ export function BarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
     const reader = new BrowserMultiFormatReader();
     readerRef.current = reader;
 
-    // 1. 카메라 제약 조건 설정 (초점 개선 핵심)
-    const constraints: MediaStreamConstraints = {
-      video: {
-        facingMode: "environment", // 후면 카메라 우선
-        width: { ideal: 1280 }, // 고해상도 요청 (초점 정확도 향상)
-        height: { ideal: 720 },
-        // @ts-ignore: 일부 브라우저에서 지원하는 자동 초점 속성
-        focusMode: { ideal: "continuous" },
-      },
-    };
+    const startScanning = async () => {
+      try {
+        // 1. 매번 장치 목록을 새로 가져옵니다.
+        const devices = await reader.listVideoInputDevices();
 
-    reader
-      .listVideoInputDevices()
-      .then((devices) => {
         if (devices.length === 0) {
           setError("카메라를 찾을 수 없습니다.");
           return;
         }
 
-        // 후면 카메라 찾기 로직 최적화
-        const backCamera =
-          devices.find((d) => /back|rear|environment/i.test(d.label)) ||
-          devices[devices.length - 1];
+        // 2. 후면 카메라 필터링을 더 꼼꼼하게 합니다.
+        // - label에 후면을 뜻하는 단어가 있는지 확인
+        // - 없으면 목록의 가장 마지막 장치를 선택 (대부분의 스마트폰은 마지막이 메인 후면 카메라)
+        const backCamera = devices.find(d => 
+          /back|rear|environment|뒤|후면/i.test(d.label.toLowerCase())
+        ) || devices[devices.length - 1];
 
         setScanning(true);
 
-        // 2. decodeFromVideoDevice 대신 decodeFromConstraints 사용 (설정값 반영)
-        // 기존 deviceId 방식보다 브라우저에게 상세한 카메라 사양을 요청할 수 있습니다.
-        reader
-          .decodeFromConstraints(
-            constraints,
-            videoRef.current!,
-            (result, err) => {
-              if (result) {
-                const code = result.getText();
-                onDetected(code);
-                reader.reset();
-              }
-              if (err && !(err instanceof NotFoundException)) {
-                console.error(err);
-              }
-            },
-          )
-          .catch((e) => {
-            setError("카메라 접근 권한이 필요합니다: " + e.message);
-          });
-      })
-      .catch(() => {
-        setError("카메라 장치 목록을 가져올 수 없습니다.");
-      });
+        // 3. 찾은 특정 backCamera.deviceId를 명시적으로 넣어서 실행합니다.
+        await reader.decodeFromVideoDevice(
+          backCamera.deviceId, 
+          videoRef.current!, 
+          (result, err) => {
+            if (result) {
+              onDetected(result.getText());
+              // 인식 성공 시 즉시 리셋 (매우 중요)
+              reader.reset(); 
+            }
+          }
+        );
+      } catch (e: any) {
+        console.error("카메라 에러:", e);
+        setError("카메라 연결 실패");
+      }
+    };
 
+    startScanning();
+
+    // 4. 컴포넌트가 닫힐 때 완전히 초기화
     return () => {
       reader.reset();
+      readerRef.current = null;
     };
   }, [onDetected]);
-
   // ... 하단 UI 코드는 동일 (video 태그의 playsInline 속성은 유지해 주세요)
   return (
     <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
