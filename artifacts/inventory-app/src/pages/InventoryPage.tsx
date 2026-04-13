@@ -179,13 +179,12 @@ export function InventoryPage() {
                 onChange={(e) => setBarcodeInput(e.target.value)}
                 onKeyDown={handleBarcodeKeyDown}
                 autoComplete="off"
-                aria-disabled={isCalendarView}
               />
             </div>
             <button
               onClick={() => handleSearch()}
               disabled={isCalendarView}
-              className={`px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium transition-opacity ml-[0px] mr-[0px] text-[17px] pl-[26px] pr-[26px] pt-[12px] pb-[12px] ${
+              className={`px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium transition-opacity ${
                 isCalendarView ? "opacity-50 cursor-not-allowed" : "hover:opacity-90"
               }`}
             >
@@ -194,7 +193,7 @@ export function InventoryPage() {
             <button
               onClick={() => setShowScanner(true)}
               disabled={isCalendarView}
-              className={`flex items-center gap-1.5 px-4 py-2.5 bg-sidebar text-sidebar-foreground rounded-lg font-medium transition-opacity text-[17px] pl-[16px] pr-[16px] ${
+              className={`flex items-center gap-1.5 px-4 py-2.5 bg-sidebar text-sidebar-foreground rounded-lg font-medium transition-opacity ${
                 isCalendarView ? "opacity-50 cursor-not-allowed" : "hover:opacity-90"
               }`}
             >
@@ -213,43 +212,39 @@ export function InventoryPage() {
           {searchState === "notfound" && (
             <div className="flex items-center gap-2 mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive">
               <AlertCircle className="w-4 h-4 shrink-0" />
-              <span className="text-sm">등록된 상품을 찾을 수 없습니다. 상품 관리에서 추가해 주세요.</span>
+              <span className="text-sm">등록된 상품을 찾을 수 없습니다.</span>
             </div>
           )}
 
+          {/* 상품이 검색되었을 때만 보여주는 영역 */}
           {searchState === "found" && currentProduct && (
             <div className="bg-muted/30 border border-border rounded-xl p-4">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">{currentProduct.code}</span>
-                  </div>
-                  <h3 className="text-xl font-bold text-foreground">{currentProduct.name}</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5 font-mono">{currentProduct.barcode}</p>
-                </div>
+              <div className="mb-3">
+                <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">{currentProduct.code}</span>
+                <h3 className="text-xl font-bold text-foreground mt-1">{currentProduct.name}</h3>
+                <p className="text-xs text-muted-foreground font-mono">{currentProduct.barcode}</p>
               </div>
 
               <div className="flex gap-3 items-end">
                 <div className="flex-1">
-                  <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+                  <label htmlFor="quantity-input" className="text-xs font-medium text-muted-foreground block mb-1.5">
                     현재 수량
                   </label>
                   <input
+                    id="quantity-input"
                     ref={quantityRef}
                     type="number"
-                    className="w-full px-4 py-3 text-2xl font-bold border-2 border-input rounded-xl bg-background focus:outline-none focus:border-primary transition-colors text-center"
+                    className="w-full px-4 py-3 text-2xl font-bold border-2 border-input rounded-xl bg-background focus:outline-none focus:border-primary text-center"
                     placeholder="0"
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
                     onKeyDown={handleQuantityKeyDown}
-                    min="0"
-                    step="1"
                   />
                 </div>
                 <button
                   onClick={handleSave}
                   disabled={!quantity || parseFloat(quantity) < 0}
-                  className="px-8 py-3 bg-primary text-primary-foreground rounded-xl text-base font-bold hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="px-8 py-3 bg-primary text-primary-foreground rounded-xl text-base font-bold hover:opacity-90 disabled:opacity-40"
                 >
                   저장
                 </button>
@@ -263,20 +258,16 @@ export function InventoryPage() {
           <button
             onClick={() => setViewMode("list")}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              viewMode === "list"
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+              viewMode === "list" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
             }`}
           >
             <List className="w-4 h-4" />
-            오늘 [{todayLabel}]
+            오늘
           </button>
           <button
             onClick={() => setViewMode("calendar")}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              viewMode === "calendar"
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+              viewMode === "calendar" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
             }`}
           >
             <CalendarDays className="w-4 h-4" />
@@ -285,17 +276,9 @@ export function InventoryPage() {
         </div>
 
         {viewMode === "list" ? (
-          <InventoryTable
-            records={records}
-            onDelete={deleteRecord}
-            onExport={() => exportToExcel(records)}
-            onClear={clearAll}
-          />
+          <InventoryTable records={records} onDelete={deleteRecord} onExport={() => exportToExcel(records)} onClear={clearAll} />
         ) : (
-          <InventoryCalendar
-            records={records}
-            onDelete={deleteRecord}
-          />
+          <InventoryCalendar records={records} onDelete={deleteRecord} />
         )}
       </main>
     </div>
