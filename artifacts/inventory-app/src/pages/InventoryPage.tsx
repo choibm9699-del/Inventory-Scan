@@ -1,5 +1,15 @@
 import { useState, useRef, KeyboardEvent } from "react";
-import { Barcode, Camera, Search, Package, ClipboardList, CheckCircle, AlertCircle, List, CalendarDays } from "lucide-react";
+import {
+  Barcode,
+  Camera,
+  Search,
+  Package,
+  ClipboardList,
+  CheckCircle,
+  AlertCircle,
+  List,
+  CalendarDays,
+} from "lucide-react";
 import { BarcodeScanner } from "../components/BarcodeScanner";
 import { ProductManager } from "../components/ProductManager";
 import { InventoryTable } from "../components/InventoryTable";
@@ -9,13 +19,24 @@ import { useProducts } from "../hooks/useProducts";
 import { useInventory } from "../hooks/useInventory";
 import { exportToExcel } from "../lib/excel";
 import type { Product } from "../types";
-import { db } from "../firebase"; // 아까 만든 설정 파일
-import { ref, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { db } from "../firebase.ts"; // 아까 만든 설정 파일
+import {
+  ref,
+  push,
+  serverTimestamp,
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
 type ViewMode = "list" | "calendar";
 
 export function InventoryPage() {
-  const { products, addProduct, updateProduct, deleteProduct, searchByBarcode, resetToDefault } = useProducts();
+  const {
+    products,
+    addProduct,
+    updateProduct,
+    deleteProduct,
+    searchByBarcode,
+    resetToDefault,
+  } = useProducts();
   const { records, addRecord, deleteRecord, clearAll } = useInventory();
 
   const [barcodeInput, setBarcodeInput] = useState("");
@@ -24,16 +45,21 @@ export function InventoryPage() {
   const [showScanner, setShowScanner] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showProductManager, setShowProductManager] = useState(false);
-  const [searchState, setSearchState] = useState<"idle" | "found" | "notfound">("idle");
+  const [searchState, setSearchState] = useState<"idle" | "found" | "notfound">(
+    "idle",
+  );
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   const quantityRef = useRef<HTMLInputElement>(null);
-  const todayLabel = new Date().toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  }).replace(/\s+/g, "-").replace(/년|월|일/g, "");
+  const todayLabel = new Date()
+    .toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
+    .replace(/\s+/g, "-")
+    .replace(/년|월|일/g, "");
 
   function handleSearch(barcode?: string) {
     const code = (barcode ?? barcodeInput).trim();
@@ -72,7 +98,7 @@ export function InventoryPage() {
 
     try {
       // 1. Firebase 데이터베이스의 'inventory_records' 경로에 연결
-      const inventoryRef = ref(db, 'inventory_records');
+      const inventoryRef = ref(db, "inventory_records");
 
       // 2. 저장할 데이터 구성
       const newRecord = {
@@ -81,16 +107,19 @@ export function InventoryPage() {
         name: currentProduct.name,
         quantity: qty,
         // serverTimestamp를 쓰면 전 세계 어디서 접속해도 정확한 서버 시간이 기록됩니다.
-        timestamp: serverTimestamp(), 
+        timestamp: serverTimestamp(),
         date: new Date().toLocaleDateString("ko-KR"),
-        time: new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
+        time: new Date().toLocaleTimeString("ko-KR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
       };
 
       // 3. Firebase에 데이터 밀어넣기 (실제 저장!)
       await push(inventoryRef, newRecord);
 
       // 4. (중요) 기존 로컬 상태 업데이트 로직 (화면에 바로 보여주기 위해 유지)
-      addRecord(newRecord); 
+      addRecord(newRecord);
 
       // 5. 저장 후 입력창 초기화 및 알림
       setLastSaved(currentProduct.name);
@@ -114,11 +143,17 @@ export function InventoryPage() {
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
       {showScanner && (
-        <BarcodeScanner onDetected={handleScanDetected} onClose={() => setShowScanner(false)} />
+        <BarcodeScanner
+          onDetected={handleScanDetected}
+          onClose={() => setShowScanner(false)}
+        />
       )}
       {showPasswordModal && (
         <PasswordModal
-          onSuccess={() => { setShowPasswordModal(false); setShowProductManager(true); }}
+          onSuccess={() => {
+            setShowPasswordModal(false);
+            setShowProductManager(true);
+          }}
           onClose={() => setShowPasswordModal(false)}
         />
       )}
@@ -141,7 +176,9 @@ export function InventoryPage() {
             </div>
             <div>
               <h1 className="font-bold text-lg leading-tight">현장 재고조사</h1>
-              <p className="text-xs text-sidebar-foreground/60">Inventory Manager</p>
+              <p className="text-xs text-sidebar-foreground/60">
+                Inventory Manager
+              </p>
             </div>
           </div>
           <button
@@ -185,7 +222,9 @@ export function InventoryPage() {
               onClick={() => handleSearch()}
               disabled={isCalendarView}
               className={`px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium transition-opacity ${
-                isCalendarView ? "opacity-50 cursor-not-allowed" : "hover:opacity-90"
+                isCalendarView
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:opacity-90"
               }`}
             >
               검색
@@ -194,7 +233,9 @@ export function InventoryPage() {
               onClick={() => setShowScanner(true)}
               disabled={isCalendarView}
               className={`flex items-center gap-1.5 px-4 py-2.5 bg-sidebar text-sidebar-foreground rounded-lg font-medium transition-opacity ${
-                isCalendarView ? "opacity-50 cursor-not-allowed" : "hover:opacity-90"
+                isCalendarView
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:opacity-90"
               }`}
             >
               <Camera className="w-4 h-4" />
@@ -205,7 +246,9 @@ export function InventoryPage() {
           {lastSaved && (
             <div className="flex items-center gap-2 mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700">
               <CheckCircle className="w-4 h-4 shrink-0" />
-              <span className="text-sm font-medium">"{lastSaved}" 저장 완료</span>
+              <span className="text-sm font-medium">
+                "{lastSaved}" 저장 완료
+              </span>
             </div>
           )}
 
@@ -220,14 +263,23 @@ export function InventoryPage() {
           {searchState === "found" && currentProduct && (
             <div className="bg-muted/30 border border-border rounded-xl p-4">
               <div className="mb-3">
-                <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">{currentProduct.code}</span>
-                <h3 className="text-xl font-bold text-foreground mt-1">{currentProduct.name}</h3>
-                <p className="text-xs text-muted-foreground font-mono">{currentProduct.barcode}</p>
+                <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                  {currentProduct.code}
+                </span>
+                <h3 className="text-xl font-bold text-foreground mt-1">
+                  {currentProduct.name}
+                </h3>
+                <p className="text-xs text-muted-foreground font-mono">
+                  {currentProduct.barcode}
+                </p>
               </div>
 
               <div className="flex gap-3 items-end">
                 <div className="flex-1">
-                  <label htmlFor="quantity-input" className="text-xs font-medium text-muted-foreground block mb-1.5">
+                  <label
+                    htmlFor="quantity-input"
+                    className="text-xs font-medium text-muted-foreground block mb-1.5"
+                  >
                     현재 수량
                   </label>
                   <input
@@ -258,7 +310,9 @@ export function InventoryPage() {
           <button
             onClick={() => setViewMode("list")}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              viewMode === "list" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+              viewMode === "list"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground"
             }`}
           >
             <List className="w-4 h-4" />
@@ -267,7 +321,9 @@ export function InventoryPage() {
           <button
             onClick={() => setViewMode("calendar")}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              viewMode === "calendar" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+              viewMode === "calendar"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground"
             }`}
           >
             <CalendarDays className="w-4 h-4" />
@@ -276,7 +332,12 @@ export function InventoryPage() {
         </div>
 
         {viewMode === "list" ? (
-          <InventoryTable records={records} onDelete={deleteRecord} onExport={() => exportToExcel(records)} onClear={clearAll} />
+          <InventoryTable
+            records={records}
+            onDelete={deleteRecord}
+            onExport={() => exportToExcel(records)}
+            onClear={clearAll}
+          />
         ) : (
           <InventoryCalendar records={records} onDelete={deleteRecord} />
         )}

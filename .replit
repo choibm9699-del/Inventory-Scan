@@ -30,3 +30,7 @@ channel = "stable-25_05"
 
 run = "node server.js"
 packages = ["run"]
+
+[[ports]]
+localPort = 8080
+externalPort = 80
