@@ -9,6 +9,8 @@ import { useProducts } from "../hooks/useProducts";
 import { useInventory } from "../hooks/useInventory";
 import { exportToExcel } from "../lib/excel";
 import type { Product } from "../types";
+import { db } from "../firebase"; // 아까 만든 설정 파일
+import { ref, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
 type ViewMode = "list" | "calendar";
 
@@ -62,29 +64,49 @@ export function InventoryPage() {
     handleSearch(barcode);
   }
 
-  function handleSave() {
+  // 이 부분을 찾아서 아래 내용으로 교체하세요!
+  async function handleSave() {
     if (!currentProduct) return;
     const qty = parseFloat(quantity);
     if (isNaN(qty) || qty < 0) return;
 
-    const now = new Date();
-    addRecord({
-      barcode: currentProduct.barcode,
-      code: currentProduct.code,
-      name: currentProduct.name,
-      quantity: qty,
-      date: now.toLocaleDateString("ko-KR"),
-      time: now.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
-    });
+    try {
+      // 1. Firebase 데이터베이스의 'inventory_records' 경로에 연결
+      const inventoryRef = ref(db, 'inventory_records');
 
-    setLastSaved(currentProduct.name);
-    setBarcodeInput("");
-    setCurrentProduct(null);
-    setQuantity("");
-    setSearchState("idle");
+      // 2. 저장할 데이터 구성
+      const newRecord = {
+        barcode: currentProduct.barcode,
+        code: currentProduct.code,
+        name: currentProduct.name,
+        quantity: qty,
+        // serverTimestamp를 쓰면 전 세계 어디서 접속해도 정확한 서버 시간이 기록됩니다.
+        timestamp: serverTimestamp(), 
+        date: new Date().toLocaleDateString("ko-KR"),
+        time: new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
+      };
 
-    setTimeout(() => setLastSaved(null), 3000);
-    document.getElementById("barcode-input")?.focus();
+      // 3. Firebase에 데이터 밀어넣기 (실제 저장!)
+      await push(inventoryRef, newRecord);
+
+      // 4. (중요) 기존 로컬 상태 업데이트 로직 (화면에 바로 보여주기 위해 유지)
+      addRecord(newRecord); 
+
+      // 5. 저장 후 입력창 초기화 및 알림
+      setLastSaved(currentProduct.name);
+      setBarcodeInput("");
+      setCurrentProduct(null);
+      setQuantity("");
+      setSearchState("idle");
+
+      setTimeout(() => setLastSaved(null), 3000);
+      document.getElementById("barcode-input")?.focus();
+
+      console.log("Firebase 저장 성공!");
+    } catch (error) {
+      console.error("Firebase 저장 에러:", error);
+      alert("데이터베이스 저장에 실패했습니다.");
+    }
   }
 
   const isCalendarView = viewMode === "calendar";

@@ -16,47 +16,10 @@
     />
   </head>
   <body>
-    <input id="barcodeInput" placeholder="바코드">
-    <input id="quantityRef" placeholder="수량">
-
-    <button onclick="handleSave()">저장</button>
-    <button onclick="fileInputRef()">불러오기</button>
-
-    <ul id="list"></ul>
-
-    <script>
-    function handleSave() {
-      const data = {
-        barcode: document.getElementById("barcodeInput").value,
-        qty: document.getElementById("quantityRef").value
-      };
-
-      fetch("/save", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(data)
-      }).then(() => alert("저장됨"));
-    }
-      function fileInputRef() {
-        fetch("/load")
-          .then(res => res.json())
-          .then(data => {
-            const list = document.getElementById("list");
-            list.innerHTML = "";
-
-            data.forEach(item => {
-              const li = document.createElement("li");
-              li.innerText = item.barcode + " / " + item.qty;
-              list.appendChild(li);
-            });
-          });
-      }
-      </script>
-
-
-    
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  
   </body>
+    
  
 </html>
