@@ -10,6 +10,7 @@ import {
   List,
   CalendarDays,
 } from "lucide-react";
+import { useEffect } from "react";
 import { BarcodeScanner } from "../components/BarcodeScanner";
 import { ProductManager } from "../components/ProductManager";
 import { InventoryTable } from "../components/InventoryTable";
@@ -25,6 +26,8 @@ import {
   push,
   serverTimestamp,
   update,
+  set,
+  onValue,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
 type ViewMode = "list" | "calendar";
@@ -49,9 +52,34 @@ export function InventoryPage() {
   const [searchState, setSearchState] = useState<"idle" | "found" | "notfound">(
     "idle",
   );
+  const [isUnlockMode, setIsUnlockMode] = useState(false);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
 
+  //추가
+
+  useEffect(() => {
+    // 1. 오늘 날짜 생성 (예: 2026-4-14)
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+
+    // 2. DB에서 오늘 날짜의 '잠금' 상태 경로 지정
+    const lockRef = ref(db, `locks/${dateStr}`);
+
+    // 3. 실시간으로 DB 값 읽기
+    const unsubscribe = onValue(lockRef, (snapshot) => {
+      if (snapshot.exists() && snapshot.val() === true) {
+        setIsLocked(true); // DB가 true면 화면을 잠금
+      } else {
+        setIsLocked(false); // DB에 없거나 false면 잠금 해제
+      }
+    });
+
+    return () => unsubscribe(); // 페이지 나갈 때 연결 끊기
+  }, []);
+  // 추가
+  const [isLocked, setIsLocked] = useState(false);
+  //
   const quantityRef = useRef<HTMLInputElement>(null);
   const todayLabel = new Date()
     .toLocaleDateString("ko-KR", {
@@ -76,6 +104,36 @@ export function InventoryPage() {
       setSearchState("notfound");
     }
   }
+
+  // 락기능 추가
+  const handleLock = async () => {
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+
+    try {
+      // Firebase의 'locks' 폴더 안에 오늘 날짜로 true 저장
+      await set(ref(db, `locks/${dateStr}`), true);
+      setIsLocked(true);
+      alert("오늘 재고조사가 마감되었습니다.");
+    } catch (error) {
+      console.error("마감 처리 중 오류:", error);
+      alert("마감 처리 중 문제가 발생했습니다.");
+    }
+  };
+  
+  const handleActualUnlock = async () => {
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+
+    try {
+      // DB에서 오늘 날짜의 잠금 데이터를 지웁니다.
+      await set(ref(db, `locks/${dateStr}`), null);
+      setIsLocked(false);
+      alert("오늘 재고조사 마감이 해제되었습니다.");
+    } catch (error) {
+      alert("해제 중 오류가 발생했습니다.");
+    }
+  };
 
   function handleBarcodeKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") handleSearch();
@@ -162,19 +220,24 @@ export function InventoryPage() {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
-      {showScanner && (
-        <BarcodeScanner
-          onDetected={handleScanDetected}
-          onClose={() => setShowScanner(false)}
-        />
-      )}
       {showPasswordModal && (
         <PasswordModal
           onSuccess={() => {
             setShowPasswordModal(false);
-            setShowProductManager(true);
+
+            if (isUnlockMode) {
+              // 1. 해제 버튼을 눌러서 비번창을 띄운 경우
+              handleActualUnlock();
+              setIsUnlockMode(false); // 모드 초기화
+            } else {
+              // 2. 상품 관리 버튼을 눌러서 비번창을 띄운 경우
+              setShowProductManager(true);
+            }
           }}
-          onClose={() => setShowPasswordModal(false)}
+          onClose={() => {
+            setShowPasswordModal(false);
+            setIsUnlockMode(false); // 닫을 때도 모드 초기화
+          }}
         />
       )}
       {showProductManager && (
@@ -229,9 +292,9 @@ export function InventoryPage() {
               <input
                 id="barcode-input"
                 type="text"
-                disabled={isCalendarView}
+                disabled={isCalendarView || isLocked} // isLocked 추가!
                 className={`w-full pl-9 pr-3 py-2.5 border border-input rounded-lg text-sm mt-[5px] mb-[5px] ${
-                  isCalendarView
+                  isCalendarView || isLocked
                     ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60"
                     : "bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                 }`}
@@ -244,9 +307,9 @@ export function InventoryPage() {
             </div>
             <button
               onClick={() => handleSearch()}
-              disabled={isCalendarView}
+              disabled={isCalendarView || isLocked}
               className={`px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium transition-opacity ${
-                isCalendarView
+                isCalendarView || isLocked
                   ? "opacity-50 cursor-not-allowed"
                   : "hover:opacity-90"
               }`}
@@ -255,9 +318,9 @@ export function InventoryPage() {
             </button>
             <button
               onClick={() => setShowScanner(true)}
-              disabled={isCalendarView}
+              disabled={isCalendarView || isLocked}
               className={`flex items-center gap-1.5 px-4 py-2.5 bg-sidebar text-sidebar-foreground rounded-lg font-medium transition-opacity ${
-                isCalendarView
+                isCalendarView || isLocked
                   ? "opacity-50 cursor-not-allowed"
                   : "hover:opacity-90"
               }`}
@@ -368,6 +431,13 @@ export function InventoryPage() {
               exportToExcel(records, `${dateStr}_재고조사`);
             }}
             onClear={clearAll}
+            isLocked={isLocked}
+            onLock={handleLock}
+            onUnlock={() => {
+              setIsUnlockMode(true);
+              setShowPasswordModal(true);
+            }}
+            // onLock={() => setIsLocked(true)}
           />
         ) : (
           <InventoryCalendar records={records} onDelete={deleteRecord} />

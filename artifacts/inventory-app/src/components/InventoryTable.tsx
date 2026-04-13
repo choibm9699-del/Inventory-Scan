@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Trash2, FileDown, Barcode } from "lucide-react";
+import { Trash2, FileDown, Barcode, CheckCircle } from "lucide-react";
 import type { InventoryRecord } from "../types";
 
 interface InventoryTableProps {
@@ -7,16 +7,23 @@ interface InventoryTableProps {
   onDelete: (id: string) => void;
   onExport: () => void;
   onClear: () => void;
+  isLocked: boolean;
+  onLock: () => void;
+  onUnlock: () => void;
 }
 
 export function InventoryTable({
   records,
   onDelete,
   onExport,
+  isLocked,
+    onLock,
+  onUnlock,
 }: InventoryTableProps) {
   const [showBarcode, setShowBarcode] = useState(false);
 
   // 1. 오늘 날짜와 일치하는 데이터만 추출 (과거 데이터 배제)
+  
   const todayRecords = useMemo(() => {
     const todayStr = new Date().toLocaleDateString("ko-KR");
     return records ? records.filter(r => r.date === todayStr) : [];
@@ -104,12 +111,14 @@ export function InventoryTable({
                     {Number(r.quantity).toLocaleString()}
                   </td>
                   <td className="px-4 py-4 text-center">
+                    {!isLocked && (
                     <button
                       onClick={() => onDelete(r.id)}
                       className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
+                  )}
                   </td>
                 </tr>
               ))}
@@ -120,10 +129,32 @@ export function InventoryTable({
 
       {/* 하단 영역 */}
       {todayRecords.length > 0 && (
-        <div className="px-5 py-4 border-t border-gray-100 flex justify-end bg-gray-50/30">
+        <div className="px-5 py-4 border-t border-gray-100 flex justify-between bg-gray-50/30">
+          <button
+            onClick={() => {
+              if (isLocked) {
+                // 이미 마감된 상태라면 해제 함수 실행
+                onUnlock(); 
+              } else {
+                // 마감 전이라면 마감 확인창 띄우기
+              if (window.confirm("재고조사를 완료하시겠습니까?\n완료 후에는 수정 및 삭제가 불가능합니다.")) {
+                onLock(); // ◀ 부모(Page)의 setIsLocked(true)를 실행시키는 명령입니다.
+                }
+              }
+            }}
+              // 이제 마감 상태여도 클릭은 가능해야 하므로 disabled={isLocked}를 지웁니다!
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-black transition-all active:scale-95 ${
+                isLocked 
+                  ? "bg-gray-400 text-white hover:bg-gray-500" // 마감 시에도 호버 효과 추가
+                  : "bg-red-500 text-white hover:bg-red-600 shadow-lg"
+            }`}
+          >
+            <CheckCircle className="w-4 h-4" />
+            조사완료
+          </button>
           <button
             onClick={onExport}
-            className="flex items-center gap-2 px-6 py-2.5 bg-green-600 text-white rounded-xl text-sm font-black hover:bg-green-700 shadow-lg shadow-green-100 transition-all active:scale-95"
+            className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-xl text-sm font-black hover:bg-green-700 shadow-lg shadow-green-100 transition-all active:scale-95"
           >
             <FileDown className="w-4 h-4" />
             엑셀 다운로드
