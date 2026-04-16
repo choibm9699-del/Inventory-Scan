@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Trash2, FileDown, Barcode, CheckCircle } from "lucide-react";
+import { useState, useMemo, useRef } from "react";
+import { Trash2, FileDown, Barcode, CheckCircle, FileUp } from "lucide-react";
 import type { InventoryRecord } from "../types";
 
 interface InventoryTableProps {
@@ -10,6 +10,7 @@ interface InventoryTableProps {
   isLocked: boolean;
   onLock: () => void;
   onUnlock: () => void;
+  onImport: (file: File) => void; //업로드추가됨
 }
 
 export function InventoryTable({
@@ -19,8 +20,11 @@ export function InventoryTable({
   isLocked,
   onLock,
   onUnlock,
+  onImport, //업로드추가
 }: InventoryTableProps) {
   const [showBarcode, setShowBarcode] = useState(false);
+  // 업로드 추가
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 1. 오늘 날짜와 일치하는 데이터만 추출 (과거 데이터 배제)
 
@@ -93,7 +97,7 @@ export function InventoryTable({
                   className="hover:bg-gray-50/50 transition-colors"
                 >
                   {showBarcode && (
-                    <td className="px-2 py-4 font-mono text-[12px] text-center text-gray-500 break-all">
+                    <td className="px-2 py-4 font-mono text-[14px] text-center text-gray-500 break-all">
                       {r.barcode}
                     </td>
                   )}
@@ -102,12 +106,12 @@ export function InventoryTable({
                       {r.name}
                     </div>
                     <div className="mt-1">
-                      <span className="text-[11px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                      <span className="text-[13px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
                         {r.code}
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-4 text-center text-[20px] font-black text-black tabular-nums">
+                  <td className="px-4 py-4 text-center text-[24px] font-black text-black tabular-nums">
                     {Number(r.quantity).toLocaleString()}
                   </td>
                   <td className="px-4 py-4 text-center">
@@ -116,7 +120,7 @@ export function InventoryTable({
                         onClick={() => onDelete(r.id)}
                         className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                       >
-                        <Trash2 className="w-5 h-5" />
+                        <Trash2 className="w-6 h-6" />
                       </button>
                     )}
                   </td>
@@ -147,22 +151,43 @@ export function InventoryTable({
               }
             }}
             // 이제 마감 상태여도 클릭은 가능해야 하므로 disabled={isLocked}를 지웁니다!
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-black transition-all active:scale-95 ${
+            className={`flex items-center gap-2 px-3 py-3.5 border border-gray-500 rounded-xl text-sm font-black transition-all active:scale-95 ${
               isLocked
-                ? "bg-gray-400 text-white hover:bg-gray-500" // 마감 시에도 호버 효과 추가
+                ? "bg-gray-400 border border-gray-500 text-white hover:bg-gray-500" // 마감 시에도 호버 효과 추가
                 : "bg-red-400 text-black hover:bg-red-600 shadow-lg"
             }`}
           >
             <CheckCircle className="w-4 h-4" />
             조사완료
           </button>
-          <button
-            onClick={onExport}
-            className="flex items-center gap-2 px-4 py-2.5 bg-green-400 text-black rounded-xl text-sm font-black hover:bg-green-700 shadow-lg shadow-green-100 transition-all active:scale-95"
-          >
-            <FileDown className="w-4 h-4" />
-            엑셀 다운로드
-          </button>
+          <div className="flex gap-2">
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept=".xlsx, .xls"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) onImport(file);
+                e.target.value = ""; // 같은 파일 다시 올릴 수 있게 초기화
+              }}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLocked} // 마감 상태면 업로드 방지
+              className="flex items-center gap-1 px-4 py-1.5 bg-sidebar text-sidebar-foreground border border-gray-500 rounded-xl text-sm font-black hover:bg-gray-100 shadow-lg transition-all active:scale-95 disabled:opacity-50"
+            >
+              <FileUp className="w-4 h-4" />
+              재고등록
+            </button>
+            <button
+              onClick={onExport}
+              className="flex items-center gap-1 px-4 py-1.5 bg-green-400 border border-gray-500 text-black rounded-xl text-sm font-black hover:bg-green-700 shadow-lg shadow-green-100 transition-all active:scale-95"
+            >
+              <FileDown className="w-4 h-4" />
+              재고저장
+            </button>
+          </div>
         </div>
       )}
     </div>

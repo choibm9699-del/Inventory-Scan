@@ -18,12 +18,14 @@ import { InventoryCalendar } from "../components/InventoryCalendar";
 import { PasswordModal } from "../components/PasswordModal";
 import { useProducts } from "../hooks/useProducts";
 import { useInventory } from "../hooks/useInventory";
-import { exportToExcel } from "../lib/excel";
+import { exportToExcel, processInventoryExcel } from "../lib/excel";
 import type { Product } from "../types";
 import { db } from "../firebase.ts"; // 아까 만든 설정 파일
 import {
   ref,
   push,
+  get,
+  remove,
   serverTimestamp,
   update,
   set,
@@ -89,7 +91,73 @@ export function InventoryPage() {
     })
     .replace(/\s+/g, "-")
     .replace(/년|월|일/g, "");
+  // 재고업로드
+  async function handleImport(file: File) {
+    try {
+      // 1. 엑셀 먼저 분석 (파일이 잘못되었으면 여기서 바로 catch로 이동)
+      const filteredData = await processInventoryExcel(file);
 
+      // 날짜 및 시간 설정
+      const now = new Date();
+      const dateKey = now.toISOString().split("T")[0]; // YYYY-MM-DD
+      const todayStr = now.toLocaleDateString("ko-KR");
+      const timeStr = now.toLocaleTimeString("ko-KR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      const dailyRef = ref(db, `daily_uploads/${dateKey}`);
+
+      // 2. 해당 날짜에 이미 데이터가 존재하는지 확인
+      const snapshot = await get(dailyRef);
+
+      if (snapshot.exists()) {
+        // 데이터가 이미 있는 경우 사용자에게 선택지 제공
+        const confirmReset = window.confirm(
+          `[${dateKey}] 날짜에 이미 업로드된 데이터가 있습니다!!.\n기존 데이터를 삭제하고 새로 업로드하시겠습니까?`,
+        );
+
+        if (!confirmReset) {
+          // '아니오' 선택 시 중단
+          return;
+        }
+
+        // '예' 선택 시 기존 데이터 초기화
+        await remove(dailyRef);
+      } else {
+        // 데이터가 없는 경우 일반적인 업로드 확인
+        if (!window.confirm("엑셀 데이터를 분석하여 업로드하시겠습니까?"))
+          return;
+      }
+
+      // 3. 데이터 저장 진행
+      // 반복문 대신 한 번에 쓰기(Update)를 고려할 수도 있으나,
+      // 기존 구조 유지를 위해 push 방식을 사용합니다.
+      for (const item of filteredData) {
+        const newRecord = {
+          code: item.code,
+          name: item.name,
+          quantity: item.quantity,
+          date: todayStr,
+          time: timeStr,
+          timestamp: serverTimestamp(),
+          source: "excel_upload",
+        };
+
+        await push(dailyRef, newRecord);
+      }
+
+      alert(
+        `성공적으로 [${dateKey}] 데이터가 최신화되었습니다. (총 ${filteredData.length}건)`,
+      );
+    } catch (error) {
+      console.error("업로드 에러:", error);
+      alert(
+        "파일 처리 중 오류가 발생했습니다. 엑셀 형식이나 네트워크 상태를 확인해주세요.",
+      );
+    }
+  }
+  // 검색기능
   function handleSearch(barcode?: string) {
     const code = (barcode ?? barcodeInput).trim();
     if (!code) return;
@@ -313,7 +381,7 @@ export function InventoryPage() {
             <button
               onClick={() => handleSearch()}
               disabled={isCalendarView || isLocked}
-              className={`px-4.5 py-1.5 bg-primary text-primary-foreground rounded-lg font-medium transition-opacity ${
+              className={`px-4.5 py-1.5 border border-gray-500 bg-primary  text-primary-foreground  rounded-lg font-medium transition-opacity ${
                 isCalendarView || isLocked
                   ? "opacity-50 cursor-not-allowed"
                   : "hover:opacity-90"
@@ -443,6 +511,7 @@ export function InventoryPage() {
               setShowPasswordModal(true);
             }}
             // onLock={() => setIsLocked(true)}
+            onImport={handleImport}
           />
         ) : (
           <InventoryCalendar records={records} onDelete={deleteRecord} />
