@@ -3,27 +3,36 @@ import type { InventoryRecord } from "../types";
 
 export function exportToExcel(
   records: InventoryRecord[],
+  dbData: any,
   filename = "재고조사",
 ) {
-  const data = records.map((r) => ({
-    날짜: r.date,
-    시간: r.time,
-    바코드: r.barcode,
-    상품코드: r.code,
-    상품명: r.name,
-    수량: r.quantity,
-  }));
+  const dbMap: Record<string, number> = {};
+
+  if (dbData) {
+    Object.values(dbData).forEach((item: any) => {
+      dbMap[item.code] = (dbMap[item.code] || 0) + (Number(item.quantity) || 0);
+    });
+  }
+
+  // 실사 기록을 엑셀용 데이터로 변환
+  const data = records.map((r) => {
+    const systemQty = dbMap[r.code] || 0; // DB에서 불러온 재고량
+    return {
+      날짜: r.date,
+      상품코드: r.code,
+      상품명: r.name,
+      실사수량: r.quantity,
+      전산재고: systemQty,
+      차이: Number(r.quantity) - systemQty
+    };
+  });
 
   const ws = XLSX.utils.json_to_sheet(data);
 
-  const colWidths = [
-    { wch: 12 },
-    { wch: 10 },
-    { wch: 18 },
-    { wch: 10 },
-    { wch: 20 },
-    { wch: 8 },
-  ];
+const colWidths = [
+  { wch: 12 }, { wch: 10 }, { wch: 15 }, { wch: 10 }, 
+  { wch: 26 }, { wch: 12 }, { wch: 10 }
+];
   ws["!cols"] = colWidths;
 
   const wb = XLSX.utils.book_new();

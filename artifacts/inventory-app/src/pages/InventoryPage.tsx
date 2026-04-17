@@ -42,7 +42,7 @@ export function InventoryPage() {
     searchByBarcode,
     resetToDefault,
   } = useProducts();
-  const { records,  deleteRecord, clearAll } = useInventory();
+  const { records, deleteRecord, clearAll } = useInventory();
   const [isSaving, setIsSaving] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState("");
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
@@ -56,6 +56,7 @@ export function InventoryPage() {
   const [isUnlockMode, setIsUnlockMode] = useState(false);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [systemInventory, setSystemInventory] = useState<any[]>([]);
 
   //추가
 
@@ -90,11 +91,14 @@ export function InventoryPage() {
     })
     .replace(/\s+/g, "-")
     .replace(/년|월|일/g, "");
+
   // 재고업로드
   async function handleImport(file: File) {
     try {
       // 1. 엑셀 먼저 분석 (파일이 잘못되었으면 여기서 바로 catch로 이동)
       const filteredData = await processInventoryExcel(file);
+
+      setSystemInventory(filteredData);
 
       // 날짜 및 시간 설정
       const now = new Date();
@@ -494,13 +498,16 @@ export function InventoryPage() {
           <InventoryTable
             records={records}
             onDelete={deleteRecord}
-            onExport={() => {
-              // 1. 현재 날짜를 "2026-4-14" 형식으로 만듭니다.
-              const now = new Date();
-              const dateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+            onExport={async () => {
+              // 1. 오늘 날짜 키 만들기 (예: 2026-04-17)
+              const dateKey = new Date().toISOString().split("T")[0];
 
-              // 2. 파일명 뒤에 날짜를 붙여서 내보냅니다.
-              exportToExcel(records, `${dateStr}_재고조사`);
+              // 2. DB에서 daily_uploads 안에 있는 오늘 데이터를 불러오기
+              const snapshot = await get(ref(db, `daily_uploads/${dateKey}`));
+              const dbData = snapshot.val(); // ← 이게 DB에서 불러온 전산재고 뭉치입니다.
+
+              // 3. 불러온 전산재고(dbData)를 엑셀 함수에 같이 던져주기
+              exportToExcel(records, dbData, `${dateKey}_재고조사_비교`);
             }}
             onClear={clearAll}
             isLocked={isLocked}

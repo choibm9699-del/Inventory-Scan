@@ -18,11 +18,11 @@
     "useUnknownInCatchVariables": true,
     "alwaysStrict": true,
     "skipLibCheck": true,
-    "target": "ES2022",
+    "target": "ES2015",
     "types": [],
     "downlevelIteration": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"]
-    "customConditions": ["workspace"]
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "customConditions": ["workspace"],
     "compilerOptions": {
       "moduleResolution": "node",
       "allowSyntheticDefaultImports": true,

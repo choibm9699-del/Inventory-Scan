@@ -12,7 +12,7 @@
     {
       "path": "./lib/api-zod"
     }
-  ]
+  ],
   "compilerOptions": {
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,

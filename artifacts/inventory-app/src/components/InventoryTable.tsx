@@ -4,6 +4,7 @@ import type { InventoryRecord } from "../types";
 
 interface InventoryTableProps {
   records: InventoryRecord[];
+  systemInventory?: any[];
   onDelete: (id: string) => void;
   onExport: () => void;
   onClear: () => void;
@@ -15,6 +16,7 @@ interface InventoryTableProps {
 
 export function InventoryTable({
   records,
+  systemInventory,
   onDelete,
   onExport,
   isLocked,
