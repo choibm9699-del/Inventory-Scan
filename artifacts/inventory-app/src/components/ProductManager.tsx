@@ -13,12 +13,12 @@ import {
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import type { Product } from "../types";
-import { PasswordModal } from "../components/PasswordModal";
+//import { PasswordModal } from "../components/PasswordModal";
 import { db } from "../firebase.ts";
 import {
   ref as dbRef,
   update,
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+} from "firebase/database";
 
 interface ProductManagerProps {
   products: Product[];
@@ -210,7 +210,7 @@ export function ProductManager({
 
         // 2. 핵심 변경 사항: update 대신 'set'을 사용하여 products 경로를 통째로 교체
         // 'set'은 해당 경로의 이전 데이터를 싹 지우고 새로 들어온 데이터만 저장합니다.
-        const { set, ref: dbRef_orig } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js");
+        const { set, ref: dbRef_orig } = await import("firebase/database");
         await set(dbRef_orig(db, "products"), newProducts);
 
         setUploadResult({ added, skipped: 0, errors });

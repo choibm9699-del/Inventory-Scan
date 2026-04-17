@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { Lock, X, Eye, EyeOff, Loader2 } from "lucide-react";
 import { db } from "../firebase.ts"; 
-import { ref as dbRef, get, child, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { ref as dbRef, get, child, } from "firebase/database";
 
-const changePassword = async (newPw: string) => {
+/*const changePassword = async (newPw: string) => {
   try {
     const updates = {};
     updates['/admin_settings/config/adminPassword'] = newPw;
@@ -14,7 +14,7 @@ const changePassword = async (newPw: string) => {
     alert("변경 실패: " + error.message);
   }
 };
-
+*/
 interface PasswordModalProps {
   onSuccess: () => void;
   onClose: () => void;

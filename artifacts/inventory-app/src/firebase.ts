@@ -3,9 +3,8 @@ import {
   initializeApp,
   getApps,
   getApp,
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getDatabase } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+} from "firebase/app";
+import { getDatabase } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBiSty3FLJ8YdMMJ3t3RZ2W3kUQRrXT4k0",

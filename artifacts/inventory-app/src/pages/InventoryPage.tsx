@@ -4,7 +4,6 @@ import {
   Camera,
   Search,
   Package,
-  ClipboardList,
   CheckCircle,
   AlertCircle,
   List,
@@ -30,7 +29,7 @@ import {
   update,
   set,
   onValue,
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+} from "firebase/database";
 
 type ViewMode = "list" | "calendar";
 
@@ -43,7 +42,7 @@ export function InventoryPage() {
     searchByBarcode,
     resetToDefault,
   } = useProducts();
-  const { records, addRecord, deleteRecord, clearAll } = useInventory();
+  const { records,  deleteRecord, clearAll } = useInventory();
   const [isSaving, setIsSaving] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState("");
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);

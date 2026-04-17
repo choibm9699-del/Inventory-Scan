@@ -7,7 +7,7 @@ import {
   remove,
   update,
   serverTimestamp,
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+} from "firebase/database";
 import type { InventoryRecord } from "../types";
 
 export function useInventory() {
