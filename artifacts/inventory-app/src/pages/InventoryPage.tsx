@@ -39,7 +39,6 @@ export function InventoryPage() {
     addProduct,
     updateProduct,
     deleteProduct,
-    searchByBarcode,
     resetToDefault,
   } = useProducts();
   const { records, deleteRecord, clearAll } = useInventory();
@@ -56,28 +55,33 @@ export function InventoryPage() {
   const [isUnlockMode, setIsUnlockMode] = useState(false);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
-  const [systemInventory, setSystemInventory] = useState<any[]>([]);
+  const [systemInventory, setSystemInventory] = useState<Record<string, number>>({});
 
-  //추가
-
+  
   useEffect(() => {
-    // 1. 오늘 날짜 생성 (예: 2026-4-14)
     const now = new Date();
-    const dateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+    const dateKey = now.toISOString().split('T')[0]; // 2026-04-17
+    const dailyRef = ref(db, `daily_uploads/${dateKey}`);
 
-    // 2. DB에서 오늘 날짜의 '잠금' 상태 경로 지정
-    const lockRef = ref(db, `locks/${dateStr}`);
+    const unsubscribe = onValue(dailyRef, (snapshot) => {
+      const data = snapshot.val();
+      const formattedMap: Record<string, number> = {}; // { "코드": 수량 } 형태의 지도
 
-    // 3. 실시간으로 DB 값 읽기
-    const unsubscribe = onValue(lockRef, (snapshot) => {
-      if (snapshot.exists() && snapshot.val() === true) {
-        setIsLocked(true); // DB가 true면 화면을 잠금
-      } else {
-        setIsLocked(false); // DB에 없거나 false면 잠금 해제
+      if (data) {
+        // DB에서 가져온 데이터를 하나씩 확인하며 지도에 담기
+        Object.values(data).forEach((item: any) => {
+          if (item.code) {
+            // 같은 코드가 여러 개일 수 있으므로 기존 값에 더해줌
+            formattedMap[item.code] = (formattedMap[item.code] || 0) + (Number(item.quantity) || 0);
+          }
+        });
       }
+
+      // 우리가 InventoryTable에 던져줄 systemInventory에 저장!
+      setSystemInventory(formattedMap); 
     });
 
-    return () => unsubscribe(); // 페이지 나갈 때 연결 끊기
+    return () => unsubscribe();
   }, []);
   // 추가
   const [isLocked, setIsLocked] = useState(false);
@@ -98,7 +102,11 @@ export function InventoryPage() {
       // 1. 엑셀 먼저 분석 (파일이 잘못되었으면 여기서 바로 catch로 이동)
       const filteredData = await processInventoryExcel(file);
 
-      setSystemInventory(filteredData);
+      const formattedMap: Record<string, number> = {};
+      filteredData.forEach((item: any) => {
+        formattedMap[item.code] = (Number(item.quantity) || 0);
+      });
+      setSystemInventory(formattedMap);
 
       // 날짜 및 시간 설정
       const now = new Date();
@@ -164,7 +172,9 @@ export function InventoryPage() {
   function handleSearch(barcode?: string) {
     const code = (barcode ?? barcodeInput).trim();
     if (!code) return;
-    const found = searchByBarcode(code);
+    const found = products.find(
+      (p) => p.barcode === code || p.code === code
+    );
     if (found) {
       setCurrentProduct(found);
       setSearchState("found");
@@ -359,7 +369,7 @@ export function InventoryPage() {
         <div className="bg-card border border-card-border rounded-xl shadow-sm p-5">
           <h2 className="font-semibold text-sm text-muted-foreground mb-4 flex items-center gap-2">
             <Barcode className="w-4 h-4" />
-            바코드 입력 / 스캔
+            상품코드 or 바코드 입력 / 스캔
           </h2>
 
           <div className="flex gap-2 mb-4">
@@ -374,7 +384,7 @@ export function InventoryPage() {
                     ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60"
                     : "bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                 }`}
-                placeholder="바코드 입력 후 Enter"
+                placeholder="상품코드 or 바코드 입력"
                 value={barcodeInput}
                 onChange={(e) => setBarcodeInput(e.target.value)}
                 onKeyDown={handleBarcodeKeyDown}
@@ -497,6 +507,7 @@ export function InventoryPage() {
         {viewMode === "list" ? (
           <InventoryTable
             records={records}
+            dbMap={systemInventory}
             onDelete={deleteRecord}
             onExport={async () => {
               // 1. 오늘 날짜 키 만들기 (예: 2026-04-17)

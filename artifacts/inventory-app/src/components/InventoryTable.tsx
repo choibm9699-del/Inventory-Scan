@@ -5,6 +5,7 @@ import type { InventoryRecord } from "../types";
 interface InventoryTableProps {
   records: InventoryRecord[];
   systemInventory?: any[];
+  dbMap: Record<string, number>;
   onDelete: (id: string) => void;
   onExport: () => void;
   onClear: () => void;
@@ -16,7 +17,7 @@ interface InventoryTableProps {
 
 export function InventoryTable({
   records,
-  systemInventory,
+  dbMap = {},
   onDelete,
   onExport,
   isLocked,
@@ -43,7 +44,7 @@ export function InventoryTable({
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       {/* 헤더 영역 */}
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 bg-gray-50/50">
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-300 bg-gray-100">
         <div className="flex items-center gap-2">
           <span className="font-bold text-gray-800">재고 기록</span>
           <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-bold">
@@ -67,6 +68,67 @@ export function InventoryTable({
         )}
       </div>
 
+      {/* 하단 영역 */}
+
+      <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between bg-gray-50/30 min-h-[64px]">
+        {/* 1. 왼쪽 영역: 고정된 너비를 가짐 (재고 없어도 공간 유지) */}
+        <div className="flex-1 flex justify-start">
+          {todayRecords.length > 0 && (
+            <button
+              onClick={() => {
+                if (isLocked) onUnlock();
+                else if (window.confirm("재고조사를 완료하시겠습니까?\n완료 후에는 수정 및 삭제가 불가능합니다.")) onLock();
+              }}
+              className={`flex items-center gap-2 px-3 py-3 border border-gray-500 rounded-xl text-sm font-black transition-all active:scale-95 ${
+                isLocked
+                  ? "bg-gray-400 text-white" 
+                  : "bg-red-400 text-black hover:bg-red-600 shadow-lg"
+              }`}
+            >
+              <CheckCircle className="w-4 h-4" />
+              조사완료
+            </button>
+          )}
+        </div>
+
+        {/* 2. 오른쪽 영역: 버튼들이 우측 끝에서부터 나열됨 */}
+        <div className="flex-1 flex justify-end items-center gap-2">
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            accept=".xlsx, .xls"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file && onImport) onImport(file);
+              e.target.value = ""; 
+            }}
+          />
+
+          {/* [재고등록] 버튼: 이 버튼은 항상 이 위치에 고정됩니다. */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLocked}
+            className="flex items-center gap-1 px-2 py-3 bg-sidebar text-sidebar-foreground border border-gray-500 rounded-xl text-sm font-black hover:bg-gray-100 shadow-lg transition-all active:scale-95 disabled:opacity-50"
+          >
+            <FileUp className="w-4 h-4" />
+            재고등록
+          </button>
+
+          {/* [재고저장] 버튼: 재고가 생기면 [재고등록] 오른쪽에 나타납니다. */}
+          {todayRecords.length > 0 && (
+            <button
+              onClick={onExport}
+              className="flex items-center gap-1 px-2 py-3 bg-green-400 border border-gray-500 text-black rounded-xl text-sm font-black hover:bg-green-700 shadow-lg shadow-green-100 transition-all active:scale-95"
+            >
+              <FileDown className="w-4 h-4" />
+              재고저장
+            </button>
+          )}
+        </div>
+      </div>
+
+
       {/* 테이블 영역: todayRecords(오늘 데이터)만 출력 */}
       {!todayRecords || todayRecords.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
@@ -86,10 +148,10 @@ export function InventoryTable({
                 <th className="px-4 py-3 font-semibold text-gray-600 text-center">
                   상품명 / 코드
                 </th>
-                <th className="w-20 px-4 py-3 font-semibold text-gray-600 text-center">
-                  수량
+                <th className="w-30 px-4 py-3 font-semibold text-gray-600 text-center">
+                  현재수량
                 </th>
-                <th className="w-12 px-4 py-3" />
+                <th className="w-10 px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -113,8 +175,25 @@ export function InventoryTable({
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-4 text-center text-[24px] font-black text-black tabular-nums">
-                    {Number(r.quantity).toLocaleString()}
+                  <td className="px-4 py-4 text-center tabular-nums">
+                    <div className="flex flex-col items-center justify-center">
+                      {/* 내가 센 수량 */}
+                      <span className="text-[22px] font-black text-black leading-none">
+                        {Number(r.quantity).toLocaleString()}
+                      </span>
+
+                      {/* 전산 수량 (dbMap에서 바로 꺼내 쓰기) */}
+                      {(() => {
+                        const systemQty = dbMap[r.code] || 0; // dbMap은 부모가 던져준 systemInventory입니다.
+                        const isExist = systemQty > 0;
+
+                        return (
+                          <span className={`text-[15px] font-bold mt-0 ${isExist ? 'text-blue-500' : 'text-gray-400'}`}>
+                            (전산: {systemQty.toLocaleString()})
+                          </span>
+                        );
+                      })()}
+                    </div>
                   </td>
                   <td className="px-4 py-4 text-center">
                     {!isLocked && (
@@ -122,7 +201,7 @@ export function InventoryTable({
                         onClick={() => onDelete(r.id)}
                         className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                       >
-                        <Trash2 className="w-6 h-6" />
+                        <Trash2 className="w-5 h-5" />
                       </button>
                     )}
                   </td>
@@ -133,65 +212,7 @@ export function InventoryTable({
         </div>
       )}
 
-      {/* 하단 영역 */}
-      {todayRecords.length > 0 && (
-        <div className="px-5 py-4 border-t border-gray-100 flex justify-between bg-gray-50/30">
-          <button
-            onClick={() => {
-              if (isLocked) {
-                // 이미 마감된 상태라면 해제 함수 실행
-                onUnlock();
-              } else {
-                // 마감 전이라면 마감 확인창 띄우기
-                if (
-                  window.confirm(
-                    "재고조사를 완료하시겠습니까?\n완료 후에는 수정 및 삭제가 불가능합니다.",
-                  )
-                ) {
-                  onLock(); // ◀ 부모(Page)의 setIsLocked(true)를 실행시키는 명령입니다.
-                }
-              }
-            }}
-            // 이제 마감 상태여도 클릭은 가능해야 하므로 disabled={isLocked}를 지웁니다!
-            className={`flex items-center gap-2 px-3 py-3.5 border border-gray-500 rounded-xl text-sm font-black transition-all active:scale-95 ${
-              isLocked
-                ? "bg-gray-400 border border-gray-500 text-white hover:bg-gray-500" // 마감 시에도 호버 효과 추가
-                : "bg-red-400 text-black hover:bg-red-600 shadow-lg"
-            }`}
-          >
-            <CheckCircle className="w-4 h-4" />
-            조사완료
-          </button>
-          <div className="flex gap-2">
-            <input
-              type="file"
-              ref={fileInputRef}
-              className="hidden"
-              accept=".xlsx, .xls"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) onImport(file);
-                e.target.value = ""; // 같은 파일 다시 올릴 수 있게 초기화
-              }}
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isLocked} // 마감 상태면 업로드 방지
-              className="flex items-center gap-1 px-4 py-1.5 bg-sidebar text-sidebar-foreground border border-gray-500 rounded-xl text-sm font-black hover:bg-gray-100 shadow-lg transition-all active:scale-95 disabled:opacity-50"
-            >
-              <FileUp className="w-4 h-4" />
-              재고등록
-            </button>
-            <button
-              onClick={onExport}
-              className="flex items-center gap-1 px-4 py-1.5 bg-green-400 border border-gray-500 text-black rounded-xl text-sm font-black hover:bg-green-700 shadow-lg shadow-green-100 transition-all active:scale-95"
-            >
-              <FileDown className="w-4 h-4" />
-              재고저장
-            </button>
-          </div>
-        </div>
-      )}
+     
     </div>
   );
 }
