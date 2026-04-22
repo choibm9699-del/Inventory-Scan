@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "isolatedModules": true,
-    "lib": ["es2022"],
     "module": "esnext",
     "moduleResolution": "bundler",
     "noEmitOnError": true,
@@ -18,18 +17,10 @@
     "useUnknownInCatchVariables": true,
     "alwaysStrict": true,
     "skipLibCheck": true,
-    "target": "ES2015",
+    "target": "ES2022",
     "types": [],
     "downlevelIteration": true,
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
-    "customConditions": ["workspace"],
-    "compilerOptions": {
-      "moduleResolution": "node",
-      "allowSyntheticDefaultImports": true,
-      "baseUrl": ".",
-      "paths": {
-        "*": ["node_modules/*"]
-      }
-    }
+    "customConditions": ["workspace"]
   }
 }

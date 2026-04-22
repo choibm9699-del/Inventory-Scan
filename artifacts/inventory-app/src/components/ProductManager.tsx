@@ -110,7 +110,7 @@ export function ProductManager({
     try {
       // 2. Firebase DB의 암호를 업데이트합니다.
       const updates = {};
-      updates["/admin_settings/config/adminPassword"] = pwForm.next;
+      (updates as any)["/admin_settings/config/adminPassword"] = pwForm.next;
 
       await update(dbRef(db), updates);
 
