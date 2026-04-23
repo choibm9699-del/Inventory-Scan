@@ -507,6 +507,7 @@ export function InventoryPage() {
         {viewMode === "list" ? (
           <InventoryTable
             records={records}
+            products={products}
             dbMap={systemInventory}
             onDelete={deleteRecord}
             onExport={async () => {

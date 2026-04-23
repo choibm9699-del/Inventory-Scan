@@ -1,97 +1,154 @@
 import { useState, useMemo, useRef } from "react";
-import { Trash2, FileDown, Barcode, CheckCircle, FileUp } from "lucide-react";
-import type { InventoryRecord } from "../types";
+import {
+  Trash2,
+  FileDown,
+  Barcode,
+  CheckCircle,
+  FileUp,
+  ArrowUpDown,
+} from "lucide-react";
+import type { InventoryRecord, Product } from "../types";
 
 interface InventoryTableProps {
   records: InventoryRecord[];
-  systemInventory?: any[];
-  dbMap: Record<string, number>;
+  products: Product[]; // 상품 마스터 정보
+  dbMap: Record<string, number>; // { "상품코드": 수량 } 형태의 전산 데이터
   onDelete: (id: string) => void;
   onExport: () => void;
   onClear: () => void;
   isLocked: boolean;
   onLock: () => void;
   onUnlock: () => void;
-  onImport: (file: File) => void; //업로드추가됨
+  onImport: (file: File) => void;
 }
 
 export function InventoryTable({
   records,
+  products = [],
   dbMap = {},
   onDelete,
   onExport,
   isLocked,
   onLock,
   onUnlock,
-  onImport, //업로드추가
+  onImport,
 }: InventoryTableProps) {
   const [showBarcode, setShowBarcode] = useState(false);
-  // 업로드 추가
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc"); //정렬추가
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 1. 오늘 날짜와 일치하는 데이터만 추출 (과거 데이터 배제)
-
-  const todayRecords = useMemo(() => {
+  // [핵심 비교 로직] 전산 데이터(dbMap)와 스캔 데이터(records)를 결합
+  const displayList = useMemo(() => {
+    // 1. 기초 데이터 준비
     const todayStr = new Date().toLocaleDateString("ko-KR");
-    return records ? records.filter((r) => r.date === todayStr) : [];
-  }, [records]);
+    const todayScanned = records
+      ? records.filter((r) => r.date === todayStr)
+      : [];
+    const allCodes = Object.keys(dbMap || {});
 
-  // 2. 오직 오늘 입력된 데이터로만 합계 계산
-  const totalItems = useMemo(() => {
-    return todayRecords.reduce((sum, r) => sum + (Number(r.quantity) || 0), 0);
-  }, [todayRecords]);
+    // 2. 데이터 가공 (전산 코드 기준)
+    const list = allCodes.map((itemCode) => {
+      // 해당 코드의 모든 스캔 기록 합산
+      const scannedItems = todayScanned.filter(
+        (r) => String(r.code).trim() === String(itemCode).trim(),
+      );
+      const totalScannedQty = scannedItems.reduce(
+        (sum, item) => sum + (Number(item.quantity) || 0),
+        0,
+      );
+
+      // 상품 마스터에서 정보 매칭
+      const productInfo = products?.find(
+        (p) => String(p.code).trim() === String(itemCode).trim(),
+      );
+
+      return {
+        // ID는 스캔 기록이 있으면 첫번째 ID, 없으면 임시 ID
+        id: scannedItems.length > 0 ? scannedItems[0].id : `temp-${itemCode}`,
+        code: itemCode,
+        name: productInfo?.name || "미등록 상품",
+        barcode: productInfo?.barcode || scannedItems[0]?.barcode || "-",
+        scannedQty: Number(totalScannedQty), // 반드시 숫자형으로 저장
+        systemQty: Number(dbMap[itemCode] || 0),
+        isScanned: totalScannedQty > 0,
+      };
+    });
+
+    // 3. [핵심] 정렬 실행 (원본 배열 복사 후 정렬해야 반영됨)
+    const sortedList = [...list].sort((a, b) => {
+      const valA = a.scannedQty;
+      const valB = b.scannedQty;
+
+      if (sortOrder === "desc") {
+        return valB - valA; // 큰 수 -> 작은 수
+      } else {
+        return valA - valB; // 작은 수 -> 큰 수
+      }
+    });
+
+    return sortedList;
+  }, [records, dbMap, products, sortOrder]);
+
+  // 상단 요약 정보 계산
+  const totalScannedSum = useMemo(() => {
+    return displayList.reduce((sum, item) => sum + item.scannedQty, 0);
+  }, [displayList]);
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-      {/* 헤더 영역 */}
+      {/* 헤더 영역 - UI 유지 */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-300 bg-gray-100">
         <div className="flex items-center gap-2">
           <span className="font-bold text-gray-800">재고 기록</span>
           <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-bold">
-            {todayRecords.length}건
+            {displayList.length}개 품목
           </span>
-          {todayRecords.length > 0 && (
-            <span className="text-xs text-gray-500 font-medium">
-              총 {totalItems.toLocaleString()}개
-            </span>
-          )}
+          <span className="text-xs text-gray-500 font-medium">
+            합계: {totalScannedSum.toLocaleString()}개
+          </span>
         </div>
-
-        {todayRecords.length > 0 && (
+        <div className="flex gap-2">
+          {/* [추가] 정렬 전환 버튼 */}
           <button
-            onClick={() => setShowBarcode((v) => !v)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-lg text-xs font-bold hover:bg-gray-50 transition-colors"
+            onClick={() =>
+              setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"))
+            }
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-50 active:bg-gray-100 transition-colors"
           >
-            <Barcode className="w-4 h-4" />
-            {showBarcode ? "바코드 숨김" : "바코드 표시"}
+            <ArrowUpDown className="w-3.5 h-3.5 text-blue-500" />
+            {sortOrder === "desc" ? " 수량 높은순" : "수량 낮은순"}
           </button>
-        )}
-      </div>
 
-      {/* 하단 영역 */}
-
-      <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between bg-gray-50/30 min-h-[64px]">
-        {/* 1. 왼쪽 영역: 고정된 너비를 가짐 (재고 없어도 공간 유지) */}
-        <div className="flex-1 flex justify-start">
-          {todayRecords.length > 0 && (
+          {displayList.length > 0 && (
             <button
-              onClick={() => {
-                if (isLocked) onUnlock();
-                else if (window.confirm("재고조사를 완료하시겠습니까?\n완료 후에는 수정 및 삭제가 불가능합니다.")) onLock();
-              }}
-              className={`flex items-center gap-2 px-3 py-3 border border-gray-500 rounded-xl text-sm font-black transition-all active:scale-95 ${
-                isLocked
-                  ? "bg-gray-400 text-white" 
-                  : "bg-red-400 text-black hover:bg-red-600 shadow-lg"
-              }`}
+              onClick={() => setShowBarcode((v) => !v)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-lg text-xs font-bold hover:bg-gray-50 transition-colors"
             >
-              <CheckCircle className="w-4 h-4" />
-              조사완료
+              <Barcode className="w-4 h-4" />
+              {showBarcode ? "바코드 숨김" : "바코드 표시"}
             </button>
           )}
         </div>
+      </div>
+      {/* 버튼 액션바 - UI 유지 */}
+      <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between bg-gray-50/30 min-h-[64px]">
+        <div className="flex-1 flex justify-start">
+          <button
+            onClick={() => {
+              if (isLocked) onUnlock();
+              else if (window.confirm("재고조사를 완료하시겠습니까?")) onLock();
+            }}
+            className={`flex items-center gap-2 px-3 py-3 border border-gray-500 rounded-xl text-sm font-black transition-all ${
+              isLocked
+                ? "bg-gray-400 text-white"
+                : "bg-red-400 text-black hover:bg-red-600 shadow-lg"
+            }`}
+          >
+            <CheckCircle className="w-4 h-4" />
+            조사완료
+          </button>
+        </div>
 
-        {/* 2. 오른쪽 영역: 버튼들이 우측 끝에서부터 나열됨 */}
         <div className="flex-1 flex justify-end items-center gap-2">
           <input
             type="file"
@@ -101,118 +158,105 @@ export function InventoryTable({
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file && onImport) onImport(file);
-              e.target.value = ""; 
+              e.target.value = "";
             }}
           />
-
-          {/* [재고등록] 버튼: 이 버튼은 항상 이 위치에 고정됩니다. */}
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isLocked}
-            className="flex items-center gap-1 px-2 py-3 bg-sidebar text-sidebar-foreground border border-gray-500 rounded-xl text-sm font-black hover:bg-gray-100 shadow-lg transition-all active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-1 px-2 py-3 bg-sidebar text-sidebar-foreground border border-gray-500 rounded-xl text-sm font-black hover:bg-gray-100 shadow-lg disabled:opacity-50"
           >
-            <FileUp className="w-4 h-4" />
-            재고등록
+            <FileUp className="w-4 h-4" /> 재고등록
           </button>
-
-          {/* [재고저장] 버튼: 재고가 생기면 [재고등록] 오른쪽에 나타납니다. */}
-          {todayRecords.length > 0 && (
-            <button
-              onClick={onExport}
-              className="flex items-center gap-1 px-2 py-3 bg-green-400 border border-gray-500 text-black rounded-xl text-sm font-black hover:bg-green-700 shadow-lg shadow-green-100 transition-all active:scale-95"
-            >
-              <FileDown className="w-4 h-4" />
-              재고저장
-            </button>
-          )}
+          <button
+            onClick={onExport}
+            className="flex items-center gap-1 px-2 py-3 bg-green-400 border border-gray-500 text-black rounded-xl text-sm font-black hover:bg-green-700 shadow-lg"
+          >
+            <FileDown className="w-4 h-4" /> 재고저장
+          </button>
         </div>
       </div>
 
-
-      {/* 테이블 영역: todayRecords(오늘 데이터)만 출력 */}
-      {!todayRecords || todayRecords.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-          <FileDown className="w-10 h-10 mb-2 opacity-20" />
-          <p className="text-sm">기록된 재고 데이터가 없습니다.</p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
+      {/* 테이블 영역 - code 기준 비교 출력 */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              {showBarcode && (
+                <th className="w-1/4 px-4 py-3 font-semibold text-gray-600 text-center">
+                  바코드
+                </th>
+              )}
+              <th className="px-4 py-3 font-semibold text-gray-600 text-center">
+                상품명 / 코드
+              </th>
+              <th className="w-30 px-4 py-3 font-semibold text-gray-600 text-center">
+                수량 / 전산
+              </th>
+              <th className="w-10 px-4 py-3" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {displayList.map((item) => (
+              <tr
+                key={item.id}
+                className="hover:bg-gray-50/50 transition-colors"
+              >
                 {showBarcode && (
-                  <th className="w-1/4 px-4 py-3 font-semibold text-gray-600 text-center">
-                    바코드
-                  </th>
+                  <td className="px-2 py-4 font-mono text-[14px] text-center text-gray-500 break-all">
+                    {item.barcode}
+                  </td>
                 )}
-                <th className="px-4 py-3 font-semibold text-gray-600 text-center">
-                  상품명 / 코드
-                </th>
-                <th className="w-30 px-4 py-3 font-semibold text-gray-600 text-center">
-                  현재수량
-                </th>
-                <th className="w-10 px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {todayRecords.map((r) => (
-                <tr
-                  key={r.id}
-                  className="hover:bg-gray-50/50 transition-colors"
-                >
-                  {showBarcode && (
-                    <td className="px-2 py-4 font-mono text-[14px] text-center text-gray-500 break-all">
-                      {r.barcode}
-                    </td>
+                <td className="px-4 py-4 text-center">
+                  <div
+                    className={`text-[18px] font-bold leading-tight ${item.isScanned ? "text-gray-900" : "text-gray-300"}`}
+                  >
+                    {item.name}
+                  </div>
+                  <div className="mt-1">
+                    <span
+                      className={`text-[13px] font-bold px-1.5 py-0.5 rounded ${item.isScanned ? "text-gray-500 bg-gray-100" : "text-gray-300 bg-gray-50"}`}
+                    >
+                      {item.code}
+                    </span>
+                  </div>
+                </td>
+                <td className="px-4 py-4 text-center tabular-nums">
+                  <div className="flex flex-col items-center justify-center">
+                    <span
+                      className={`text-[22px] font-black leading-none ${item.isScanned ? "text-black" : "text-gray-200"}`}
+                    >
+                      {item.scannedQty.toLocaleString()}
+                    </span>
+
+                    <span
+                      className={`text-[15px] font-bold mt-1 ${
+                        item.scannedQty !== item.systemQty
+                          ? "text-red-500"
+                          : item.systemQty > 0
+                          ? "text-blue-500"
+                          : "text-gray-300"
+                      }`}
+                    >
+                      (전산: {item.systemQty.toLocaleString()})
+                    </span>
+                  </div>
+                </td>
+                <td className="px-4 py-4 text-center">
+                  {item.isScanned && !isLocked && (
+                    <button
+                      onClick={() => onDelete(item.id)}
+                      className="p-2 text-gray-300 hover:text-red-500 rounded-lg"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
                   )}
-                  <td className="px-4 py-4 text-center">
-                    <div className="text-[18px] font-bold text-gray-900 leading-tight">
-                      {r.name}
-                    </div>
-                    <div className="mt-1">
-                      <span className="text-[13px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-                        {r.code}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 text-center tabular-nums">
-                    <div className="flex flex-col items-center justify-center">
-                      {/* 내가 센 수량 */}
-                      <span className="text-[22px] font-black text-black leading-none">
-                        {Number(r.quantity).toLocaleString()}
-                      </span>
-
-                      {/* 전산 수량 (dbMap에서 바로 꺼내 쓰기) */}
-                      {(() => {
-                        const systemQty = dbMap[r.code] || 0; // dbMap은 부모가 던져준 systemInventory입니다.
-                        const isExist = systemQty > 0;
-
-                        return (
-                          <span className={`text-[15px] font-bold mt-0 ${isExist ? 'text-blue-500' : 'text-gray-400'}`}>
-                            (전산: {systemQty.toLocaleString()})
-                          </span>
-                        );
-                      })()}
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 text-center">
-                    {!isLocked && (
-                      <button
-                        onClick={() => onDelete(r.id)}
-                        className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-     
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

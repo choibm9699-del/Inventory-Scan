@@ -4,8 +4,39 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
+
+// 배포용 포트
 const port = 5173;
 const basePath = process.env.BASE_PATH || "/";
+
+
+// 로컬용 포트 설정
+/*const rawPort = process.env.PORT;
+
+if (!rawPort) {
+  throw new Error(
+    "PORT environment variable is required but was not provided.",
+  );
+}
+
+const port = Number(rawPort);
+
+if (Number.isNaN(port) || port <= 0) {
+  throw new Error(`Invalid PORT value: "${rawPort}"`);
+}
+
+const basePath = process.env.BASE_PATH;
+
+if (!basePath) {
+  throw new Error(
+    "BASE_PATH environment variable is required but was not provided.",
+  );
+}
+*/
+
+
+
+
 
 export default defineConfig({
   base: basePath,
@@ -40,8 +71,8 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    port: 5173,
-    host: "0.0.0.0",
+    port: 5173,    // 배포영
+    //port,          // 로컬용
     allowedHosts: true,
     fs: {
       strict: true,
@@ -49,7 +80,8 @@ export default defineConfig({
     },
   },
   preview: {
-    port: 5173,
+    port: 5173,    // 배포영
+    //port,          // 로컬용
     host: "0.0.0.0",
     allowedHosts: true,
   },
