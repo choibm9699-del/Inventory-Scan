@@ -33,7 +33,7 @@ export function InventoryTable({
   onUnlock,
   onImport,
 }: InventoryTableProps) {
-  const [showBarcode, setShowBarcode] = useState(false);
+  const [showOnlyDiff, setShowOnlyDiff] = useState(true);
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc"); //정렬추가
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -74,8 +74,12 @@ export function InventoryTable({
       };
     });
 
+    const filteredList = showOnlyDiff 
+    ? list.filter((item) => item.scannedQty !== item.systemQty) 
+    : list;
+    
     // 3. [핵심] 정렬 실행 (원본 배열 복사 후 정렬해야 반영됨)
-    const sortedList = [...list].sort((a, b) => {
+    const sortedList = [...filteredList].sort((a, b) => {
       const valA = a.scannedQty;
       const valB = b.scannedQty;
 
@@ -87,7 +91,7 @@ export function InventoryTable({
     });
 
     return sortedList;
-  }, [records, dbMap, products, sortOrder]);
+  }, [records, dbMap, products, sortOrder, showOnlyDiff]);
 
   // 상단 요약 정보 계산
   const totalScannedSum = useMemo(() => {
@@ -97,15 +101,17 @@ export function InventoryTable({
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       {/* 헤더 영역 - UI 유지 */}
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-300 bg-gray-100">
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-gray-800">재고 기록</span>
-          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-bold">
+      <div className="flex items-center justify-between px-2 py-3.5 border-b border-gray-300 bg-gray-100">
+        <div className="flex flex-col">
+          <h1 className="text-xl font-semibold px-1 text-gray-800">재고 기록</h1>
+          <div>
+          <span className="text-xs bg-gray-100 px-1 text-gray-600 rounded-full font-bold">
             {displayList.length}개 품목
           </span>
           <span className="text-xs text-gray-500 font-medium">
-            합계: {totalScannedSum.toLocaleString()}개
+            (합계: {totalScannedSum.toLocaleString()}개)
           </span>
+          </div>
         </div>
         <div className="flex gap-2">
           {/* [추가] 정렬 전환 버튼 */}
@@ -113,26 +119,30 @@ export function InventoryTable({
             onClick={() =>
               setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"))
             }
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-50 active:bg-gray-100 transition-colors"
+            className="flex items-center gap-1.5 px-2 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-50 active:bg-gray-100 transition-colors"
           >
             <ArrowUpDown className="w-3.5 h-3.5 text-blue-500" />
             {sortOrder === "desc" ? " 수량 높은순" : "수량 낮은순"}
           </button>
 
           {displayList.length > 0 && (
-            <button
-              onClick={() => setShowBarcode((v) => !v)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-lg text-xs font-bold hover:bg-gray-50 transition-colors"
-            >
-              <Barcode className="w-4 h-4" />
-              {showBarcode ? "바코드 숨김" : "바코드 표시"}
-            </button>
+      <button
+        onClick={() => setShowOnlyDiff(!showOnlyDiff)}
+        className={`flex items-center gap-1.5 px-3 py-3 border rounded-lg text-xs font-bold transition-all ${
+          showOnlyDiff 
+            ? "bg-red-50 border-red-200 text-red-600 shadow-sm" 
+            : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+        }`}
+      >
+      {showOnlyDiff ? <CheckCircle className="w-4 h-4" /> : <Barcode className="w-4 h-4" />}
+        {showOnlyDiff ? "차이 보기" : "전체 보기"}
+      </button>
           )}
         </div>
       </div>
       {/* 버튼 액션바 - UI 유지 */}
-      <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between bg-gray-50/30 min-h-[64px]">
-        <div className="flex-1 flex justify-start">
+      <div className="px-5 py-1 border-t border-gray-100 flex items-center justify-between bg-gray-50/30 min-h-[64px]">
+
           <button
             onClick={() => {
               if (isLocked) onUnlock();
@@ -147,7 +157,7 @@ export function InventoryTable({
             <CheckCircle className="w-4 h-4" />
             조사완료
           </button>
-        </div>
+
 
         <div className="flex-1 flex justify-end items-center gap-2">
           <input
@@ -182,11 +192,7 @@ export function InventoryTable({
         <table className="w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
-              {showBarcode && (
-                <th className="w-1/4 px-4 py-3 font-semibold text-gray-600 text-center">
-                  바코드
-                </th>
-              )}
+             
               <th className="px-4 py-3 font-semibold text-gray-600 text-center">
                 상품명 / 코드
               </th>
@@ -202,11 +208,7 @@ export function InventoryTable({
                 key={item.id}
                 className="hover:bg-gray-50/50 transition-colors"
               >
-                {showBarcode && (
-                  <td className="px-2 py-4 font-mono text-[14px] text-center text-gray-500 break-all">
-                    {item.barcode}
-                  </td>
-                )}
+                
                 <td className="px-4 py-4 text-center">
                   <div
                     className={`text-[18px] font-bold leading-tight ${item.isScanned ? "text-gray-900" : "text-gray-300"}`}
