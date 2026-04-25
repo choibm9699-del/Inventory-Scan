@@ -6,44 +6,98 @@ import {
   push,
   remove,
   update,
+  get,
   serverTimestamp,
 } from "firebase/database";
 import type { InventoryRecord } from "../types";
 
 export function useInventory() {
   const [records, setRecords] = useState<InventoryRecord[]>([]);
-
+  
+  const getDateKey = () => new Date().toISOString().split('T')[0];
+  
   // 1. 데이터 실시간 불러오기 (Read)
-  useEffect(() => {
-    const recordsRef = ref(db, "inventory_records");
+useEffect(() => {
+    const dateKey = getDateKey();
 
-    // DB의 값이 바뀔 때마다 자동으로 실행됨
+      const runCleanup = async () => {
+        try {
+          const now = new Date();
+          const twoWeeksAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 14);
+
+          // 1. 재고 기록(inventory_records) 데이터 가져오기
+          const inventorySnapshot = await get(ref(db, "inventory_records"));
+          const inventoryData = inventorySnapshot.val();
+
+          // 2. 엑셀 업로드(daily_uploads) 데이터 가져오기
+          const uploadsSnapshot = await get(ref(db, "daily_uploads"));
+          const uploadsData = uploadsSnapshot.val();
+
+          console.log("데이터 정리 확인 중...");
+
+          // inventory_records 청소
+          if (inventoryData) {
+            for (const key of Object.keys(inventoryData)) {
+              const recordDate = new Date(key);
+              if (!isNaN(recordDate.getTime())) {
+                const comparisonDate = new Date(recordDate.getFullYear(), recordDate.getMonth(), recordDate.getDate());
+                if (comparisonDate < twoWeeksAgo) {
+                  console.log(`기록 삭제: ${key}`);
+                  await remove(ref(db, `inventory_records/${key}`));
+                }
+              }
+            }
+          }
+
+          // daily_uploads 청소 (추가된 부분)
+          if (uploadsData) {
+            for (const key of Object.keys(uploadsData)) {
+              const uploadDate = new Date(key);
+              if (!isNaN(uploadDate.getTime())) {
+                const comparisonDate = new Date(uploadDate.getFullYear(), uploadDate.getMonth(), uploadDate.getDate());
+                if (comparisonDate < twoWeeksAgo) {
+                  console.log(`업로드 내역 삭제: ${key}`);
+                  await remove(ref(db, `daily_uploads/${key}`));
+                }
+              }
+            }
+          }
+    } catch (err) {
+      console.error("Cleanup Error:", err);
+    }
+  };
+
+  // 1. 즉시 실행
+  runCleanup();
+  
+    // 경로에 날짜(dateKey)를 추가합니다.
+    const recordsRef = ref(db, `inventory_records/${dateKey}`);
+
     const unsubscribe = onValue(recordsRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        // Firebase 객체를 배열로 변환
         const list = Object.keys(data).map((key) => ({
           ...data[key],
-          id: key, // Firebase의 고유 키를 id로 사용
+          id: key,
         })) as InventoryRecord[];
 
-        // 최신순 정렬
-        setRecords(list.reverse());
+        setRecords(list.reverse()); // 최신 스캔이 위로 오도록 정렬
       } else {
         setRecords([]);
       }
     });
 
-    return () => unsubscribe(); // 컴포넌트 종료 시 감시 중단
+    return () => unsubscribe();
   }, []);
 
-  // 2. 기록 추가 (Create) - InventoryPage에서 호출됨
+  // 2. 기록 추가 (Create)
   const addRecord = useCallback(async (record: Omit<InventoryRecord, "id">) => {
     try {
-      const recordsRef = ref(db, "inventory_records");
+      const dateKey = getDateKey();
+      const recordsRef = ref(db, `inventory_records/${dateKey}`);
       await push(recordsRef, {
         ...record,
-        timestamp: serverTimestamp(), // 서버 시간 저장
+        timestamp: serverTimestamp(),
       });
     } catch (error) {
       console.error("추가 실패:", error);
@@ -54,7 +108,8 @@ export function useInventory() {
   const updateRecord = useCallback(
     async (id: string, updates: Partial<InventoryRecord>) => {
       try {
-        const recordRef = ref(db, `inventory_records/${id}`);
+        const dateKey = getDateKey();
+        const recordRef = ref(db, `inventory_records/${dateKey}/${id}`);
         await update(recordRef, updates);
       } catch (error) {
         console.error("수정 실패:", error);
@@ -66,18 +121,21 @@ export function useInventory() {
   // 4. 기록 삭제 (Delete)
   const deleteRecord = useCallback(async (id: string) => {
     try {
-      const recordRef = ref(db, `inventory_records/${id}`);
+      // 삭제할 때도 오늘 날짜 폴더 안의 특정 ID를 찾아 지웁니다.
+      const dateKey = getDateKey();
+      const recordRef = ref(db, `inventory_records/${dateKey}/${id}`);
       await remove(recordRef);
     } catch (error) {
       console.error("삭제 실패:", error);
     }
   }, []);
 
-  // 5. 전체 초기화 (Clear)
+  // 5. 전체 초기화 (Clear) - "오늘치 데이터"만 삭제
   const clearAll = useCallback(async () => {
-    if (window.confirm("정말로 모든 데이터를 삭제하시겠습니까?")) {
+    if (window.confirm("오늘 작업한 모든 데이터를 삭제하시겠습니까?")) {
       try {
-        const recordsRef = ref(db, "inventory_records");
+        const dateKey = getDateKey();
+        const recordsRef = ref(db, `inventory_records/${dateKey}`);
         await remove(recordsRef);
       } catch (error) {
         console.error("초기화 실패:", error);

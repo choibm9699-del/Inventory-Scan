@@ -230,6 +230,7 @@ export function InventoryPage() {
     handleSearch(barcode);
   }
 
+  //handsave 저장기능
   async function handleSave() {
     if (!currentProduct || isSaving) return;
 
@@ -239,9 +240,14 @@ export function InventoryPage() {
     setIsSaving(true);
 
     try {
-      // 1. 오늘 날짜 문자열 생성 (저장 형식과 일치하도록)
+      // 1. 오늘 날짜 문자열 생성 (저장 형식과 일치하도록
+      const now = new Date();
+      const dateKey = now.toISOString().split('T')[0];
       const todayStr = new Date().toLocaleDateString("ko-KR");
 
+
+      const dailyRecordsRef = ref(db, `inventory_records/${dateKey}`);
+      
       // 2. [수정] 바코드뿐만 아니라 '오늘 날짜'까지 일치하는 기록이 있는지 확인
       const existingRecord = records.find(
         (r) => r.barcode === currentProduct.barcode && r.date === todayStr,
@@ -249,7 +255,7 @@ export function InventoryPage() {
 
       if (existingRecord && existingRecord.id) {
         // [업데이트] 오늘 이미 입력한 내역이 있는 경우에만 수량 합산
-        const recordRef = ref(db, `inventory_records/${existingRecord.id}`);
+        const recordRef = ref(db, `inventory_records/${dateKey}/${existingRecord.id}`);
 
         await update(recordRef, {
           quantity: existingRecord.quantity + qty,
@@ -262,7 +268,8 @@ export function InventoryPage() {
         console.log("오늘 작업분 수량 합산 완료");
       } else {
         // [신규 저장] 오늘 처음 입력하는 바코드이거나 과거 데이터만 있는 경우 새로 생성
-        const inventoryRef = ref(db, "inventory_records");
+      
+        
         const newRecord = {
           barcode: currentProduct.barcode,
           code: currentProduct.code,
@@ -275,7 +282,7 @@ export function InventoryPage() {
             minute: "2-digit",
           }),
         };
-        await push(inventoryRef, newRecord);
+        await push(dailyRecordsRef, newRecord);
         console.log("새로운 항목 저장 완료");
       }
 
@@ -379,12 +386,12 @@ export function InventoryPage() {
                 id="barcode-input"
                 type="text"
                 disabled={isCalendarView || isLocked} // isLocked 추가!
-                className={`w-full pl-9 pr-3 py-2.5 border border-input rounded-lg text-sm mt-[5px] mb-[5px] ${
+                className={`w-full pl-8 pr-3 py-2.5 border border-input rounded-lg text-sm mt-[5px] mb-[5px] ${
                   isCalendarView || isLocked
                     ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60"
                     : "bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                 }`}
-                placeholder="상품코드 or 바코드 입력"
+                placeholder="상품코드/바코드 입력"
                 value={barcodeInput}
                 onChange={(e) => setBarcodeInput(e.target.value)}
                 onKeyDown={handleBarcodeKeyDown}
@@ -394,7 +401,7 @@ export function InventoryPage() {
             <button
               onClick={() => handleSearch()}
               disabled={isCalendarView || isLocked}
-              className={`px-4.5 py-1.5 border border-gray-500 bg-primary  text-primary-foreground  rounded-lg font-medium transition-opacity ${
+              className={`px-3.5 py-1.5 border border-gray-500 bg-primary  text-primary-foreground  rounded-lg font-medium transition-opacity ${
                 isCalendarView || isLocked
                   ? "opacity-50 cursor-not-allowed"
                   : "hover:opacity-90"
@@ -405,13 +412,13 @@ export function InventoryPage() {
             <button
               onClick={() => setShowScanner(true)}
               disabled={isCalendarView || isLocked}
-              className={`flex items-center gap-1.5 px-4 py-2.5 bg-sidebar text-sidebar-foreground rounded-lg font-medium transition-opacity ${
+              className={`flex items-center gap-0.5 px-1 py-1.5 bg-sidebar text-sidebar-foreground rounded-lg font-medium transition-opacity ${
                 isCalendarView || isLocked
                   ? "opacity-50 cursor-not-allowed"
                   : "hover:opacity-90"
               }`}
             >
-              <Camera className="w-4 h-4" />
+              <Camera className="w-6 h-6" />
               카메라
             </button>
           </div>

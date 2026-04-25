@@ -21,7 +21,7 @@ export function exportToExcel(
       날짜: r.date,
       상품코드: r.code,
       상품명: r.name,
-      실사수량: r.quantity,
+      현장재고: r.quantity,
       전산재고: systemQty,
       차이: Number(r.quantity) - systemQty
     };
@@ -30,8 +30,8 @@ export function exportToExcel(
   const ws = XLSX.utils.json_to_sheet(data);
 
 const colWidths = [
-  { wch: 12 }, { wch: 10 }, { wch: 15 }, { wch: 10 }, 
-  { wch: 26 }, { wch: 12 }, { wch: 10 }
+  { wch: 10 }, { wch: 10 }, { wch: 20 }, { wch: 8 }, 
+  { wch: 8 }, { wch: 8 }, { wch: 10 }
 ];
   ws["!cols"] = colWidths;
 

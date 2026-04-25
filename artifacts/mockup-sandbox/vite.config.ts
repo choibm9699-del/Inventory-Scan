@@ -75,7 +75,7 @@ export default defineConfig({
     },
   },
   preview: {
-     port: 5173,    // 배포영
+    port: 5173,    // 배포영
     //port,          // 로컬용
     host: "0.0.0.0",
     allowedHosts: true,

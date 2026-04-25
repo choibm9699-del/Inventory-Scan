@@ -5,6 +5,7 @@ import {
   Barcode,
   CheckCircle,
   FileUp,
+  List,
   ArrowUpDown,
 } from "lucide-react";
 import type { InventoryRecord, Product } from "../types";
@@ -130,12 +131,12 @@ export function InventoryTable({
         onClick={() => setShowOnlyDiff(!showOnlyDiff)}
         className={`flex items-center gap-1.5 px-3 py-3 border rounded-lg text-xs font-bold transition-all ${
           showOnlyDiff 
-            ? "bg-red-50 border-red-200 text-red-600 shadow-sm" 
+            ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-50" 
             : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
         }`}
       >
-      {showOnlyDiff ? <CheckCircle className="w-4 h-4" /> : <Barcode className="w-4 h-4" />}
-        {showOnlyDiff ? "차이 보기" : "전체 보기"}
+      {showOnlyDiff ? <List className="w-4 h-4" /> : <CheckCircle className="w-4 h-4 text-blue-500" />}
+        {showOnlyDiff ? "전체 보기" : "완료 숨김"}
       </button>
           )}
         </div>
@@ -193,13 +194,13 @@ export function InventoryTable({
           <thead className="bg-gray-50">
             <tr>
              
-              <th className="px-4 py-3 font-semibold text-gray-600 text-center">
+              <th className="px-2 py-3 font-semibold text-gray-600 text-center">
                 상품명 / 코드
               </th>
-              <th className="w-30 px-4 py-3 font-semibold text-gray-600 text-center">
+              <th className="w-23 px-2 py-3 font-semibold text-gray-600 text-center">
                 수량 / 전산
               </th>
-              <th className="w-10 px-4 py-3" />
+              <th className="w-10 px-2 py-3" />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -209,30 +210,30 @@ export function InventoryTable({
                 className="hover:bg-gray-50/50 transition-colors"
               >
                 
-                <td className="px-4 py-4 text-center">
+                <td className="px-2 py-4 text-center">
                   <div
-                    className={`text-[18px] font-bold leading-tight ${item.isScanned ? "text-gray-900" : "text-gray-300"}`}
+                    className={`text-[20px] font-bold leading-tight ${item.isScanned ? "text-gray-900" : "text-gray-300"}`}
                   >
                     {item.name}
                   </div>
                   <div className="mt-1">
                     <span
-                      className={`text-[13px] font-bold px-1.5 py-0.5 rounded ${item.isScanned ? "text-gray-500 bg-gray-100" : "text-gray-300 bg-gray-50"}`}
+                      className={`text-[11px] font-bold px-1.5 py-0.5 rounded ${item.isScanned ? "text-blue-400 bg-blue-50" : "text-gray-300 bg-gray-50"}`}
                     >
                       {item.code}
                     </span>
                   </div>
                 </td>
-                <td className="px-4 py-4 text-center tabular-nums">
+                <td className="px-2 py-4 text-center tabular-nums">
                   <div className="flex flex-col items-center justify-center">
                     <span
-                      className={`text-[22px] font-black leading-none ${item.isScanned ? "text-black" : "text-gray-200"}`}
+                      className={`text-[23px] font-black leading-none ${item.isScanned ? "text-black" : "text-gray-200"}`}
                     >
                       {item.scannedQty.toLocaleString()}
                     </span>
 
                     <span
-                      className={`text-[15px] font-bold mt-1 ${
+                      className={`text-[13px] font-bold mt-1 ${
                         item.scannedQty !== item.systemQty
                           ? "text-red-500"
                           : item.systemQty > 0
@@ -244,13 +245,13 @@ export function InventoryTable({
                     </span>
                   </div>
                 </td>
-                <td className="px-4 py-4 text-center">
+                <td className="px-1 py-2 text-center">
                   {item.isScanned && !isLocked && (
                     <button
                       onClick={() => onDelete(item.id)}
                       className="p-2 text-gray-300 hover:text-red-500 rounded-lg"
                     >
-                      <Trash2 className="w-5 h-5" />
+                      <Trash2 className="w-7 h-6" />
                     </button>
                   )}
                 </td>
