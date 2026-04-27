@@ -15,10 +15,7 @@ import * as XLSX from "xlsx";
 import type { Product } from "../types";
 //import { PasswordModal } from "../components/PasswordModal";
 import { db } from "../firebase.ts";
-import {
-  ref as dbRef,
-  update,
-} from "firebase/database";
+import { ref as dbRef, update, set } from "firebase/database";
 
 interface ProductManagerProps {
   products: Product[];
@@ -218,8 +215,19 @@ export function ProductManager({
 
         // 2. 핵심 변경 사항: update 대신 'set'을 사용하여 products 경로를 통째로 교체
         // 'set'은 해당 경로의 이전 데이터를 싹 지우고 새로 들어온 데이터만 저장합니다.
-        const { set, ref: dbRef_orig } = await import("firebase/database");
-        await set(dbRef_orig(db, "products"), newProducts);
+        await set(dbRef(db, "products"), null);
+
+        const entries = Object.entries(newProducts);
+        const CHUNK_SIZE = 300;
+
+        for (let i = 0; i < entries.length; i += CHUNK_SIZE) {
+          const chunk = Object.fromEntries(entries.slice(i, i + CHUNK_SIZE));
+          await update(dbRef(db, "products"), chunk);
+          console.log(`완료: ${Math.min(i + CHUNK_SIZE, entries.length)} / ${entries.length}`);
+
+          // ↓ 이게 핵심! 100개 올릴 때마다 1초 쉬기
+          await new Promise(res => setTimeout(res, 1000));
+        }
 
         setUploadResult({ added, skipped: 0, errors });
         alert("상품 목록이 엑셀 데이터로 완전히 교체되었습니다.");

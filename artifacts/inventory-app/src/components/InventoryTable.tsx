@@ -48,7 +48,7 @@ export function InventoryTable({
 }: InventoryTableProps) {
   const [showOnlyDiff, setShowOnlyDiff] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [sortOrder, setSortOrder] = useState<"desc" | "asc" | "chosung">("desc");
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc" | "chosung" | "code">("desc");
   const isDbLoaded = Object.keys(dbMap).length > 0;
   // [핵심 비교 로직] 전산 데이터(dbMap)와 스캔 데이터(records)를 결합
   const displayList = useMemo(() => {
@@ -108,7 +108,8 @@ export function InventoryTable({
     const sortedList = [...filteredList].sort((a, b) => {
       if (sortOrder === "desc") return b.scannedQty - a.scannedQty;
       if (sortOrder === "asc") return a.scannedQty - b.scannedQty;
-      return getChosung(a.name).localeCompare(getChosung(b.name));
+      if (sortOrder === "chosung") return getChosung(a.name).localeCompare(getChosung(b.name));
+      return a.code.localeCompare(b.code); // 코드순
     });
 
     return sortedList;
@@ -141,13 +142,13 @@ export function InventoryTable({
           <button
             onClick={() =>
               setSortOrder((prev) =>
-                prev === "desc" ? "asc" : prev === "asc" ? "chosung" : "desc"
+                prev === "desc" ? "asc" : prev === "asc" ? "chosung" : prev === "chosung" ? "code" : "desc"
               )
             }
-            className="flex items-center gap-1.5 px-2 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-50 active:bg-gray-100 transition-colors"
+            className="flex items-center gap-1.5 px-2 py-3 w-24 bg-white border border-gray-300 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-50 active:bg-gray-100 transition-colors"
           >
             <ArrowUpDown className="w-3.5 h-3.5 text-blue-500" />
-            {sortOrder === "desc" ? "수량 높은순" : sortOrder === "asc" ? "수량 낮은순" : "초성순"}
+            {sortOrder === "desc" ? "수량 높은순" : sortOrder === "asc" ? "수량 낮은순" : sortOrder === "chosung" ? "상품순" : "상품코드순"}
           </button>
 
           {displayList.length > 0 && (

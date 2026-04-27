@@ -469,7 +469,7 @@ export function InventoryPage() {
         <div className="bg-card border border-card-border rounded-xl shadow-sm p-4">
           <h2 className="font-semibold text-sm text-muted-foreground mb-4 flex items-center gap-2">
             <Barcode className="w-4 h-4" />
-            상품코드 or 바코드 입력 / 스캔
+            상품코드 or 상품명 입력 / 바코드 스캔
           </h2>
 
           <div className="flex gap-3">
@@ -485,7 +485,7 @@ export function InventoryPage() {
                       ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60"
                       : "bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                   }`}
-                  placeholder="상품코드/바코드 입력"
+                  placeholder="상품코드 입력"
                   value={barcodeInput}
                   onChange={(e) => setBarcodeInput(e.target.value)}
                   onKeyDown={handleBarcodeKeyDown}
