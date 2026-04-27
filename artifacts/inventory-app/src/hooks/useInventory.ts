@@ -77,17 +77,28 @@ useEffect(() => {
   runCleanup();
   
     // 경로에 날짜(dateKey)를 추가합니다.
-    const recordsRef = ref(db, `inventory_records/${dateKey}`);
+  const recordsRef = ref(db, "inventory_records");
 
     const unsubscribe = onValue(recordsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const list = Object.keys(data).map((key) => ({
-          ...data[key],
-          id: key,
-        })) as InventoryRecord[];
+      const allData = snapshot.val();
+      if (allData) {
+        const today = getDateKey(); // "2026-04-27"
 
-        setRecords(list.reverse()); // 최신 스캔이 위로 오도록 정렬
+        // 전체 데이터를 하나의 배열로 합치기
+        let allList: InventoryRecord[] = [];
+        Object.keys(allData).forEach(date => {
+          const dateFolder = allData[date];
+          const listPerDate = Object.keys(dateFolder).map(key => ({
+            ...dateFolder[key],
+            id: key,
+          }));
+          allList = [...allList, ...listPerDate];
+        });
+
+        // 캘린더를 위해 전체 기록을 보관하되, 
+        // 메인 리스트(records)에는 오늘 날짜 데이터만 필터링해서 넣고 싶다면:
+        const todayList = allList.filter(r => r.date === today || r.date === new Date().toLocaleDateString("ko-KR"));
+        setRecords(allList); // 일단 모든 데이터를 넣어줘야 캘린더가 작동합니다.
       } else {
         setRecords([]);
       }

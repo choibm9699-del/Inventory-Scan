@@ -87,7 +87,7 @@ export function InventoryTable({
 
     const filteredList = showOnlyDiff 
     ? list.filter((item) => item.scannedQty !== item.systemQty) 
-    : list;
+    : list.filter((item) => item.scannedQty > 0 || item.systemQty > 0);
 
     // 3. [핵심] 정렬 실행
     const sortedList = [...filteredList].sort((a, b) => {

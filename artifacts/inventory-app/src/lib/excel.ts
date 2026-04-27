@@ -23,26 +23,27 @@ export function exportToExcel(
       상품명: r.name,
       현장재고: r.quantity,
       전산재고: systemQty,
-      차이: Number(r.quantity) - systemQty
+      차이: Number(r.quantity) - systemQty,
     };
   });
 
   const ws = XLSX.utils.json_to_sheet(data);
 
-const colWidths = [
-  { wch: 10 }, { wch: 10 }, { wch: 20 }, { wch: 8 }, 
-  { wch: 8 }, { wch: 8 }, { wch: 10 }
-];
+  const colWidths = [
+    { wch: 10 },
+    { wch: 10 },
+    { wch: 20 },
+    { wch: 8 },
+    { wch: 8 },
+    { wch: 8 },
+    { wch: 10 },
+  ];
   ws["!cols"] = colWidths;
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "재고조사");
 
-  const dateStr = new Date()
-    .toLocaleDateString("ko-KR")
-    .replace(/\. /g, "-")
-    .replace(".", "");
-  XLSX.writeFile(wb, `${filename}.xlsx`);
+  XLSX.writeFile(wb, `이전_${filename}.xlsx`);
 }
 export interface FilteredInventory {
   code: string;

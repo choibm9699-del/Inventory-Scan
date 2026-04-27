@@ -10,6 +10,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { useEffect } from "react";
+import * as XLSX from "xlsx";
 import { BarcodeScanner } from "../components/BarcodeScanner";
 import { ProductManager } from "../components/ProductManager";
 import { InventoryTable } from "../components/InventoryTable";
@@ -518,16 +519,57 @@ export function InventoryPage() {
             dbMap={systemInventory}
             onDelete={deleteRecord}
             onExport={async () => {
-              // 1. 오늘 날짜 키 만들기 (예: 2026-04-17)
-              const dateKey = new Date().toISOString().split("T")[0];
+              // 1. 오늘 날짜 키 (비교용)
+              const d = new Date();
+                const todayDash = d.toISOString().split("T")[0];
+                const todayDot = d.toLocaleDateString("ko-KR");
 
-              // 2. DB에서 daily_uploads 안에 있는 오늘 데이터를 불러오기
-              const snapshot = await get(ref(db, `daily_uploads/${dateKey}`));
-              const dbData = snapshot.val(); // ← 이게 DB에서 불러온 전산재고 뭉치입니다.
+                // 2. 오늘 스캔한 기록만 필터링
+                const todayScanned = records.filter(
+                  (r) => r.date === todayDash || r.date === todayDot
+                );
 
-              // 3. 불러온 전산재고(dbData)를 엑셀 함수에 같이 던져주기
-              exportToExcel(records, dbData, `${dateKey}_재고조사_비교`);
-            }}
+                // 3. DB에서 오늘치 전산재고(daily_uploads) 원본 가져오기
+                const snapshot = await get(ref(db, `daily_uploads/${todayDash}`));
+                const dbData = snapshot.val() || {};
+
+                // 4. [핵심] 모든 상품 코드 모으기 (전산 + 실사 합치기)
+                const dbCodes = Object.keys(dbData).map(key => String(dbData[key].code).trim());
+                const scannedCodes = todayScanned.map(r => String(r.code).trim());
+                const allCodes = Array.from(new Set([...dbCodes, ...scannedCodes]));
+
+                // 5. 엑셀에 들어갈 전체 데이터 생성
+                const exportData = allCodes.map((code) => {
+                  // 해당 코드의 실사 데이터 합산
+                  const scannedItems = todayScanned.filter(r => String(r.code).trim() === code);
+                  const totalScanned = scannedItems.reduce((sum, r) => sum + (Number(r.quantity) || 0), 0);
+
+                  // 해당 코드의 전산 데이터 정보 (dbData는 push로 쌓인 객체이므로 값에서 찾음)
+                  const dbItem = Object.values(dbData).find((item: any) => String(item.code).trim() === code) as any;
+                  const systemQty = Number(dbItem?.quantity || 0);
+
+                  return {
+                    날짜: todayDash,
+                    상품코드: code,
+                    상품명: dbItem?.name || scannedItems[0]?.name || "미등록 상품",
+                    현장재고: totalScanned,
+                    전산재고: systemQty,
+                    차이: totalScanned - systemQty
+                  };
+                });
+
+                // 6. 가공된 전체 데이터를 exportToExcel 대신 여기서 직접 파일로 저장
+                // (기존 exportToExcel을 수정하지 않고 여기서 처리하는게 가장 확실합니다)
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "재고조사");
+
+                const colWidths = [{ wch: 10 }, { wch: 10 }, { wch: 20 }, { wch: 8 }, 
+                                   { wch: 8 }, { wch: 8 }, { wch: 10 }];
+                ws["!cols"] = colWidths;
+
+                XLSX.writeFile(wb, `${todayDash}_재고조사.xlsx`);
+              }}
             onClear={clearAll}
             isLocked={isLocked}
             onLock={handleLock}
