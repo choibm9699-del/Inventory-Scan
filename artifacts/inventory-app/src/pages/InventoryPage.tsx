@@ -35,13 +35,8 @@ import {
 type ViewMode = "list" | "calendar";
 
 export function InventoryPage() {
-  const {
-    products,
-    addProduct,
-    updateProduct,
-    deleteProduct,
-    resetToDefault,
-  } = useProducts();
+  const { products, addProduct, updateProduct, deleteProduct, resetToDefault } =
+    useProducts();
   const { records, deleteRecord, clearAll } = useInventory();
   const [isSaving, setIsSaving] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState("");
@@ -56,14 +51,16 @@ export function InventoryPage() {
   const [isUnlockMode, setIsUnlockMode] = useState(false);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
-  const [systemInventory, setSystemInventory] = useState<Record<string, number>>({});
+  const [systemInventory, setSystemInventory] = useState<
+    Record<string, number>
+  >({});
   const [productNameInput, setProductNameInput] = useState("");
   const [foundCandidates, setFoundCandidates] = useState<Product[]>([]);
   const [showCandidateModal, setShowCandidateModal] = useState(false);
-  
+
   useEffect(() => {
     const now = new Date();
-    const dateKey = now.toISOString().split('T')[0]; // 2026-04-17
+    const dateKey = now.toISOString().split("T")[0]; // 2026-04-17
     const dailyRef = ref(db, `daily_uploads/${dateKey}`);
 
     const unsubscribe = onValue(dailyRef, (snapshot) => {
@@ -75,13 +72,14 @@ export function InventoryPage() {
         Object.values(data).forEach((item: any) => {
           if (item.code) {
             // 같은 코드가 여러 개일 수 있으므로 기존 값에 더해줌
-            formattedMap[item.code] = (formattedMap[item.code] || 0) + (Number(item.quantity) || 0);
+            formattedMap[item.code] =
+              (formattedMap[item.code] || 0) + (Number(item.quantity) || 0);
           }
         });
       }
 
       // 우리가 InventoryTable에 던져줄 systemInventory에 저장!
-      setSystemInventory(formattedMap); 
+      setSystemInventory(formattedMap);
     });
 
     return () => unsubscribe();
@@ -108,7 +106,7 @@ export function InventoryPage() {
 
       const formattedMap: Record<string, number> = {};
       filteredData.forEach((item: any) => {
-        formattedMap[item.code] = (Number(item.quantity) || 0);
+        formattedMap[item.code] = Number(item.quantity) || 0;
       });
       setSystemInventory(formattedMap);
 
@@ -178,10 +176,7 @@ export function InventoryPage() {
     if (!code) return;
 
     const matched = products.filter(
-      (p) =>
-        p.barcode === code ||
-        p.code === code ||
-        p.code.endsWith(code)
+      (p) => p.barcode === code || p.code === code || p.code.endsWith(code),
     );
 
     if (matched.length === 0) {
@@ -199,13 +194,13 @@ export function InventoryPage() {
       setShowCandidateModal(true);
     }
   }
-  //상품명 검색 
+  //상품명 검색
   const handleProductNameSearch = () => {
     if (!productNameInput.trim()) return;
 
     const keyword = productNameInput.trim().toLowerCase();
     const matched = products.filter((p) =>
-      p.name.toLowerCase().includes(keyword)
+      p.name.toLowerCase().includes(keyword),
     );
 
     if (matched.length === 0) {
@@ -224,7 +219,7 @@ export function InventoryPage() {
       setShowCandidateModal(true);
     }
   };
-  
+
   // 락기능 추가
   const handleLock = async () => {
     const now = new Date();
@@ -282,12 +277,11 @@ export function InventoryPage() {
     try {
       // 1. 오늘 날짜 문자열 생성 (저장 형식과 일치하도록
       const now = new Date();
-      const dateKey = now.toISOString().split('T')[0];
+      const dateKey = now.toISOString().split("T")[0];
       const todayStr = new Date().toLocaleDateString("ko-KR");
 
-
       const dailyRecordsRef = ref(db, `inventory_records/${dateKey}`);
-      
+
       // 2. [수정] 바코드뿐만 아니라 '오늘 날짜'까지 일치하는 기록이 있는지 확인
       const existingRecord = records.find(
         (r) => r.barcode === currentProduct.barcode && r.date === todayStr,
@@ -295,7 +289,10 @@ export function InventoryPage() {
 
       if (existingRecord && existingRecord.id) {
         // [업데이트] 오늘 이미 입력한 내역이 있는 경우에만 수량 합산
-        const recordRef = ref(db, `inventory_records/${dateKey}/${existingRecord.id}`);
+        const recordRef = ref(
+          db,
+          `inventory_records/${dateKey}/${existingRecord.id}`,
+        );
 
         await update(recordRef, {
           quantity: existingRecord.quantity + qty,
@@ -308,8 +305,7 @@ export function InventoryPage() {
         console.log("오늘 작업분 수량 합산 완료");
       } else {
         // [신규 저장] 오늘 처음 입력하는 바코드이거나 과거 데이터만 있는 경우 새로 생성
-      
-        
+
         const newRecord = {
           barcode: currentProduct.barcode,
           code: currentProduct.code,
@@ -369,7 +365,6 @@ export function InventoryPage() {
         />
       )}
 
-      
       {showCandidateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
           <div className="bg-card rounded-2xl shadow-xl w-full max-w-sm p-5">
@@ -421,7 +416,7 @@ export function InventoryPage() {
           </div>
         </div>
       )}
-      
+
       {showProductManager && (
         <ProductManager
           products={products}
@@ -475,25 +470,25 @@ export function InventoryPage() {
 
           <div className="flex gap-3">
             <div className="flex flex-col">
-            <div className="flex-1 relative ">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                id="barcode-input"
-                type="text"
-                disabled={isCalendarView || isLocked} // isLocked 추가!
-                className={`w-full pl-8 pr-1 py-2.5 border border-input rounded-lg text-sm mt-[5px] mb-[5px] ${
-                  isCalendarView || isLocked
-                    ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60"
-                    : "bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                }`}
-                placeholder="상품코드/바코드 입력"
-                value={barcodeInput}
-                onChange={(e) => setBarcodeInput(e.target.value)}
-                onKeyDown={handleBarcodeKeyDown}
-                autoComplete="off"
-              />
-            </div>
-            
+              <div className="flex-1 relative ">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  id="barcode-input"
+                  type="text"
+                  disabled={isCalendarView || isLocked} // isLocked 추가!
+                  className={`w-full pl-8 pr-1 py-2.5 border border-input rounded-lg text-sm mt-[5px] mb-[5px] ${
+                    isCalendarView || isLocked
+                      ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60"
+                      : "bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  }`}
+                  placeholder="상품코드/바코드 입력"
+                  value={barcodeInput}
+                  onChange={(e) => setBarcodeInput(e.target.value)}
+                  onKeyDown={handleBarcodeKeyDown}
+                  autoComplete="off"
+                />
+              </div>
+
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
@@ -511,8 +506,8 @@ export function InventoryPage() {
                   autoComplete="off"
                 />
               </div>
-               </div>
-              
+            </div>
+
             <button
               onClick={() => {
                 if (productNameInput.trim()) {
@@ -535,7 +530,7 @@ export function InventoryPage() {
             <button
               onClick={() => setShowScanner(true)}
               disabled={isCalendarView || isLocked}
-              className={`flex-2 flex-col justify-center gap-2 px-3 py-3 bg-sidebar text-sidebar-foreground text-sm rounded-lg font-bold transition-opacity ${
+              className={`flex-2 flex flex-col items-center justify-center gap-2 px-3 py-3 bg-sidebar text-sidebar-foreground text-sm rounded-lg font-bold transition-opacity ${
                 isCalendarView || isLocked
                   ? "opacity-50 cursor-not-allowed"
                   : "hover:opacity-90"
@@ -643,55 +638,76 @@ export function InventoryPage() {
             onExport={async () => {
               // 1. 오늘 날짜 키 (비교용)
               const d = new Date();
-                const todayDash = d.toISOString().split("T")[0];
-                const todayDot = d.toLocaleDateString("ko-KR");
+              const todayDash = d.toISOString().split("T")[0];
+              const todayDot = d.toLocaleDateString("ko-KR");
 
-                // 2. 오늘 스캔한 기록만 필터링
-                const todayScanned = records.filter(
-                  (r) => r.date === todayDash || r.date === todayDot
+              // 2. 오늘 스캔한 기록만 필터링
+              const todayScanned = records.filter(
+                (r) => r.date === todayDash || r.date === todayDot,
+              );
+
+              // 3. DB에서 오늘치 전산재고(daily_uploads) 원본 가져오기
+              const snapshot = await get(ref(db, `daily_uploads/${todayDash}`));
+              const dbData = snapshot.val() || {};
+
+              // 4. [핵심] 모든 상품 코드 모으기 (전산 + 실사 합치기)
+              const dbCodes = Object.keys(dbData).map((key) =>
+                String(dbData[key].code).trim(),
+              );
+              const scannedCodes = todayScanned.map((r) =>
+                String(r.code).trim(),
+              );
+              const allCodes = Array.from(
+                new Set([...dbCodes, ...scannedCodes]),
+              );
+
+              // 5. 엑셀에 들어갈 전체 데이터 생성
+              const exportData = allCodes.map((code) => {
+                // 해당 코드의 실사 데이터 합산
+                const scannedItems = todayScanned.filter(
+                  (r) => String(r.code).trim() === code,
+                );
+                const totalScanned = scannedItems.reduce(
+                  (sum, r) => sum + (Number(r.quantity) || 0),
+                  0,
                 );
 
-                // 3. DB에서 오늘치 전산재고(daily_uploads) 원본 가져오기
-                const snapshot = await get(ref(db, `daily_uploads/${todayDash}`));
-                const dbData = snapshot.val() || {};
+                // 해당 코드의 전산 데이터 정보 (dbData는 push로 쌓인 객체이므로 값에서 찾음)
+                const dbItem = Object.values(dbData).find(
+                  (item: any) => String(item.code).trim() === code,
+                ) as any;
+                const systemQty = Number(dbItem?.quantity || 0);
 
-                // 4. [핵심] 모든 상품 코드 모으기 (전산 + 실사 합치기)
-                const dbCodes = Object.keys(dbData).map(key => String(dbData[key].code).trim());
-                const scannedCodes = todayScanned.map(r => String(r.code).trim());
-                const allCodes = Array.from(new Set([...dbCodes, ...scannedCodes]));
+                return {
+                  날짜: todayDash,
+                  상품코드: code,
+                  상품명:
+                    dbItem?.name || scannedItems[0]?.name || "미등록 상품",
+                  현장재고: totalScanned,
+                  전산재고: systemQty,
+                  차이: totalScanned - systemQty,
+                };
+              });
 
-                // 5. 엑셀에 들어갈 전체 데이터 생성
-                const exportData = allCodes.map((code) => {
-                  // 해당 코드의 실사 데이터 합산
-                  const scannedItems = todayScanned.filter(r => String(r.code).trim() === code);
-                  const totalScanned = scannedItems.reduce((sum, r) => sum + (Number(r.quantity) || 0), 0);
+              // 6. 가공된 전체 데이터를 exportToExcel 대신 여기서 직접 파일로 저장
+              // (기존 exportToExcel을 수정하지 않고 여기서 처리하는게 가장 확실합니다)
+              const ws = XLSX.utils.json_to_sheet(exportData);
+              const wb = XLSX.utils.book_new();
+              XLSX.utils.book_append_sheet(wb, ws, "재고조사");
 
-                  // 해당 코드의 전산 데이터 정보 (dbData는 push로 쌓인 객체이므로 값에서 찾음)
-                  const dbItem = Object.values(dbData).find((item: any) => String(item.code).trim() === code) as any;
-                  const systemQty = Number(dbItem?.quantity || 0);
+              const colWidths = [
+                { wch: 10 },
+                { wch: 10 },
+                { wch: 20 },
+                { wch: 8 },
+                { wch: 8 },
+                { wch: 8 },
+                { wch: 10 },
+              ];
+              ws["!cols"] = colWidths;
 
-                  return {
-                    날짜: todayDash,
-                    상품코드: code,
-                    상품명: dbItem?.name || scannedItems[0]?.name || "미등록 상품",
-                    현장재고: totalScanned,
-                    전산재고: systemQty,
-                    차이: totalScanned - systemQty
-                  };
-                });
-
-                // 6. 가공된 전체 데이터를 exportToExcel 대신 여기서 직접 파일로 저장
-                // (기존 exportToExcel을 수정하지 않고 여기서 처리하는게 가장 확실합니다)
-                const ws = XLSX.utils.json_to_sheet(exportData);
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "재고조사");
-
-                const colWidths = [{ wch: 10 }, { wch: 10 }, { wch: 20 }, { wch: 8 }, 
-                                   { wch: 8 }, { wch: 8 }, { wch: 10 }];
-                ws["!cols"] = colWidths;
-
-                XLSX.writeFile(wb, `${todayDash}_재고조사.xlsx`);
-              }}
+              XLSX.writeFile(wb, `${todayDash}_재고조사.xlsx`);
+            }}
             onClear={clearAll}
             isLocked={isLocked}
             onLock={handleLock}
