@@ -23,7 +23,7 @@ export function useProducts() {
         // Firebase 객체를 배열로 변환
         const list = Object.keys(data).map((key) => ({
           ...data[key],
-        })) as Product[];
+        })).filter((p) => p.code && p.name && p.barcode) as Product[];
         setProducts(list);
       } else {
         // 데이터가 없으면 기본 상품들로 DB 세팅 (선택 사항)

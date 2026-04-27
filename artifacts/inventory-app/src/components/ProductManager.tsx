@@ -193,20 +193,28 @@ export function ProductManager({
         const errors: string[] = [];
 
         rows.forEach((row, idx) => {
-          const rowNum = idx + 2;
-          const barcode = String(row["바코드"] ?? row["barcode"] ?? "").trim();
-          const code = String(row["상품코드"] ?? row["code"] ?? "").trim();
-          const name = String(row["상품명"] ?? row["name"] ?? "").trim();
+            const rowNum = idx + 2;
+            const barcode = String(row["바코드"] ?? row["barcode"] ?? "").trim();
+            const code = String(row["상품코드"] ?? row["code"] ?? "").trim();
+            const name = String(row["상품명"] ?? row["name"] ?? "").trim();
 
-          if (!barcode || !code || !name) {
-            errors.push(`${rowNum}행: 필수 정보 누락으로 제외됨`);
-            return;
-          }
+            // 상품명이 없으면 제외 (최소한 이름은 있어야 함)
+            if (!name) {
+              errors.push(`${rowNum}행: 상품명 누락으로 제외됨`);
+              return;
+            }
 
-          // 중복된 바코드가 엑셀 안에 있다면 마지막 것으로 덮어씌워짐
-          newProducts[barcode] = { barcode, code, name };
-          added++;
-        });
+            // 바코드가 있으면 바코드를 키로, 없으면 상품코드를 키로 사용
+            const key = barcode || code;
+
+            if (!key) {
+              errors.push(`${rowNum}행: 바코드와 상품코드 모두 없어 제외됨`);
+              return;
+            }
+
+            newProducts[key] = { barcode, code, name };
+            added++;
+          });
 
         // 2. 핵심 변경 사항: update 대신 'set'을 사용하여 products 경로를 통째로 교체
         // 'set'은 해당 경로의 이전 데이터를 싹 지우고 새로 들어온 데이터만 저장합니다.

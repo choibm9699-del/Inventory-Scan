@@ -45,6 +45,12 @@ function toDateKey(date: Date): string {
 }
 
 function recordToDateKey(dateStr: string): string | null {
+  // "2026-04-28" 형식 처리 추가
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    return `${y}-${m}-${d}`; // "2026-4-28" 형식으로 통일
+  }
+  // 기존 한국어 형식 "2026. 4. 8." 처리
   const d = parseKoreanDate(dateStr);
   if (!d) return null;
   return toDateKey(d);

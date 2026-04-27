@@ -37,7 +37,7 @@ type ViewMode = "list" | "calendar";
 export function InventoryPage() {
   const { products, addProduct, updateProduct, deleteProduct, resetToDefault } =
     useProducts();
-  const { records, deleteRecord, clearAll } = useInventory();
+  const { records,allRecords, deleteRecord, clearAll } = useInventory();
   const [isSaving, setIsSaving] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState("");
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
@@ -60,7 +60,7 @@ export function InventoryPage() {
 
   useEffect(() => {
     const now = new Date();
-    const dateKey = now.toISOString().split("T")[0]; // 2026-04-17
+    const dateKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     const dailyRef = ref(db, `daily_uploads/${dateKey}`);
 
     const unsubscribe = onValue(dailyRef, (snapshot) => {
@@ -112,7 +112,8 @@ export function InventoryPage() {
 
       // 날짜 및 시간 설정
       const now = new Date();
-      const dateKey = now.toISOString().split("T")[0]; // YYYY-MM-DD
+      const d = new Date();
+      const dateKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       const todayStr = now.toLocaleDateString("ko-KR");
       const timeStr = now.toLocaleTimeString("ko-KR", {
         hour: "2-digit",
@@ -176,7 +177,10 @@ export function InventoryPage() {
     if (!code) return;
 
     const matched = products.filter(
-      (p) => p.barcode === code || p.code === code || p.code.endsWith(code),
+      (p) =>
+        p.barcode === code ||
+        p.code === code ||
+        (p.code?.endsWith(code) ?? false)
     );
 
     if (matched.length === 0) {
@@ -200,7 +204,7 @@ export function InventoryPage() {
 
     const keyword = productNameInput.trim().toLowerCase();
     const matched = products.filter((p) =>
-      p.name.toLowerCase().includes(keyword),
+      p.name?.toLowerCase().includes(keyword) ?? false
     );
 
     if (matched.length === 0) {
@@ -277,7 +281,7 @@ export function InventoryPage() {
     try {
       // 1. 오늘 날짜 문자열 생성 (저장 형식과 일치하도록
       const now = new Date();
-      const dateKey = now.toISOString().split("T")[0];
+      const dateKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
       const todayStr = new Date().toLocaleDateString("ko-KR");
 
       const dailyRecordsRef = ref(db, `inventory_records/${dateKey}`);
@@ -638,13 +642,9 @@ export function InventoryPage() {
             onExport={async () => {
               // 1. 오늘 날짜 키 (비교용)
               const d = new Date();
-              const todayDash = d.toISOString().split("T")[0];
+              const todayDash = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
               const todayDot = d.toLocaleDateString("ko-KR");
-
-              // 2. 오늘 스캔한 기록만 필터링
-              const todayScanned = records.filter(
-                (r) => r.date === todayDash || r.date === todayDot,
-              );
+              const todayScanned = records.filter((r) => r.date === todayDot); // 저장형식이 ko-KR이므로 하나만
 
               // 3. DB에서 오늘치 전산재고(daily_uploads) 원본 가져오기
               const snapshot = await get(ref(db, `daily_uploads/${todayDash}`));
@@ -719,7 +719,7 @@ export function InventoryPage() {
             onImport={handleImport}
           />
         ) : (
-          <InventoryCalendar records={records} onDelete={deleteRecord} />
+          <InventoryCalendar records={allRecords} onDelete={deleteRecord} />
         )}
       </main>
     </div>

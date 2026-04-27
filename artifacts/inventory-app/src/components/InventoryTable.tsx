@@ -49,23 +49,23 @@ export function InventoryTable({
   const [showOnlyDiff, setShowOnlyDiff] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [sortOrder, setSortOrder] = useState<"desc" | "asc" | "chosung">("desc");
-    
+  const isDbLoaded = Object.keys(dbMap).length > 0;
   // [핵심 비교 로직] 전산 데이터(dbMap)와 스캔 데이터(records)를 결합
   const displayList = useMemo(() => {
     // 1. 기초 데이터 준비
     // 날짜 비교를 위해 대시(-)와 점(.) 형식을 모두 준비합니다.
-    const d = new Date();
-    const todayDash = d.toISOString().split('T')[0]; // 2026-04-27
-    const todayDot = d.toLocaleDateString("ko-KR"); // 2026. 4. 27.
+  const d = new Date();
+  const todayDash = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const todayDot = d.toLocaleDateString("ko-KR"); // 2026. 4. 27.
 
     // 오늘 날짜 스캔 기록 필터링 (기존 todayStr 대신 두 형식 모두 체크)
-    const todayScanned = records
+  const todayScanned = records
       ? records.filter((r) => r.date === todayDash || r.date === todayDot)
       : [];
 
     // [수정 포인트] dbMap(전산) 코드와 todayScanned(실사) 코드를 합쳐서 기준을 잡습니다.
-    const dbCodes = Object.keys(dbMap || {});
-    const scannedCodes = todayScanned.map(r => String(r.code).trim());
+  const dbCodes = Object.keys(dbMap || {});
+  const scannedCodes = todayScanned.map(r => String(r.code).trim());
 
     // 두 곳의 코드를 합쳐서 중복 없는 전체 목록 생성
     const allCodes = Array.from(new Set([...dbCodes, ...scannedCodes]));
@@ -173,7 +173,8 @@ export function InventoryTable({
               if (isLocked) onUnlock();
               else if (window.confirm("재고조사를 완료하시겠습니까?")) onLock();
             }}
-            className={`flex items-center gap-2 px-3 py-3 border border-gray-500 rounded-xl text-sm font-black transition-all ${
+            disabled={!isDbLoaded || false}
+            className={`flex items-center gap-2 px-3 py-3 border border-gray-500 rounded-xl text-sm font-black transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
               isLocked
                 ? "bg-gray-400 text-white"
                 : "bg-red-400 text-black hover:bg-red-600 shadow-lg"
@@ -205,7 +206,8 @@ export function InventoryTable({
           </button>
           <button
             onClick={onExport}
-            className="flex items-center gap-1 px-2 py-3 bg-green-400 border border-gray-500 text-black rounded-xl text-sm font-black hover:bg-green-700 shadow-lg"
+            disabled={!isDbLoaded}
+            className="flex items-center gap-1 px-2 py-3 bg-green-400 border border-gray-500 text-black rounded-xl text-sm font-black hover:bg-green-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FileDown className="w-4 h-4" /> 재고저장
           </button>
