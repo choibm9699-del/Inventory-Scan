@@ -22,6 +22,19 @@ interface InventoryTableProps {
   onImport: (file: File) => void;
 }
 
+function getChosung(str: string) {
+  const CHOSUNG = ["ㄱ","ㄴ","ㄷ","ㄹ","ㅁ","ㅂ","ㅅ","ㅇ","ㅈ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ",
+                   "ㄲ","ㄸ","ㅃ","ㅆ","ㅉ"];
+  return str
+    .split("")
+    .map((char) => {
+      const code = char.charCodeAt(0) - 0xac00;
+      if (code < 0 || code > 11171) return char;
+      return CHOSUNG[Math.floor(code / 588)];
+    })
+    .join("");
+}
+
 export function InventoryTable({
   records,
   products = [],
@@ -34,9 +47,9 @@ export function InventoryTable({
   onImport,
 }: InventoryTableProps) {
   const [showOnlyDiff, setShowOnlyDiff] = useState(true);
-  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc"); //정렬추가
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc" | "chosung">("desc");
+    
   // [핵심 비교 로직] 전산 데이터(dbMap)와 스캔 데이터(records)를 결합
   const displayList = useMemo(() => {
     // 1. 기초 데이터 준비
@@ -85,25 +98,24 @@ export function InventoryTable({
       };
     });
 
+
+
     const filteredList = showOnlyDiff 
     ? list.filter((item) => item.scannedQty !== item.systemQty) 
     : list.filter((item) => item.scannedQty > 0 || item.systemQty > 0);
 
     // 3. [핵심] 정렬 실행
     const sortedList = [...filteredList].sort((a, b) => {
-      const valA = a.scannedQty;
-      const valB = b.scannedQty;
-
-      if (sortOrder === "desc") {
-        return valB - valA;
-      } else {
-        return valA - valB;
-      }
+      if (sortOrder === "desc") return b.scannedQty - a.scannedQty;
+      if (sortOrder === "asc") return a.scannedQty - b.scannedQty;
+      return getChosung(a.name).localeCompare(getChosung(b.name));
     });
 
     return sortedList;
   }, [records, dbMap, products, sortOrder, showOnlyDiff]);
+  //
 
+  
   // 상단 요약 정보 계산
   const totalScannedSum = useMemo(() => {
     return displayList.reduce((sum, item) => sum + item.scannedQty, 0);
@@ -128,12 +140,14 @@ export function InventoryTable({
           {/* [추가] 정렬 전환 버튼 */}
           <button
             onClick={() =>
-              setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"))
+              setSortOrder((prev) =>
+                prev === "desc" ? "asc" : prev === "asc" ? "chosung" : "desc"
+              )
             }
             className="flex items-center gap-1.5 px-2 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-50 active:bg-gray-100 transition-colors"
           >
             <ArrowUpDown className="w-3.5 h-3.5 text-blue-500" />
-            {sortOrder === "desc" ? " 수량 높은순" : "수량 낮은순"}
+            {sortOrder === "desc" ? "수량 높은순" : sortOrder === "asc" ? "수량 낮은순" : "초성순"}
           </button>
 
           {displayList.length > 0 && (

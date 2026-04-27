@@ -57,7 +57,9 @@ export function InventoryPage() {
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [systemInventory, setSystemInventory] = useState<Record<string, number>>({});
-
+  const [productNameInput, setProductNameInput] = useState("");
+  const [foundCandidates, setFoundCandidates] = useState<Product[]>([]);
+  const [showCandidateModal, setShowCandidateModal] = useState(false);
   
   useEffect(() => {
     const now = new Date();
@@ -84,6 +86,7 @@ export function InventoryPage() {
 
     return () => unsubscribe();
   }, []);
+
   // 추가
   const [isLocked, setIsLocked] = useState(false);
   //
@@ -173,20 +176,55 @@ export function InventoryPage() {
   function handleSearch(barcode?: string) {
     const code = (barcode ?? barcodeInput).trim();
     if (!code) return;
-    const found = products.find(
-      (p) => p.barcode === code || p.code === code
+
+    const matched = products.filter(
+      (p) =>
+        p.barcode === code ||
+        p.code === code ||
+        p.code.endsWith(code)
     );
-    if (found) {
-      setCurrentProduct(found);
+
+    if (matched.length === 0) {
+      setCurrentProduct(null);
+      setSearchState("notfound");
+    } else if (matched.length === 1) {
+      // 1개면 바로 선택
+      setCurrentProduct(matched[0]);
       setSearchState("found");
       setQuantity("");
       setTimeout(() => quantityRef.current?.focus(), 100);
     } else {
-      setCurrentProduct(null);
-      setSearchState("notfound");
+      // 여러 개면 선택 모달
+      setFoundCandidates(matched);
+      setShowCandidateModal(true);
     }
   }
+  //상품명 검색 
+  const handleProductNameSearch = () => {
+    if (!productNameInput.trim()) return;
 
+    const keyword = productNameInput.trim().toLowerCase();
+    const matched = products.filter((p) =>
+      p.name.toLowerCase().includes(keyword)
+    );
+
+    if (matched.length === 0) {
+      setCurrentProduct(null);
+      setSearchState("notfound");
+    } else if (matched.length === 1) {
+      // 1개면 바로 선택
+      setCurrentProduct(matched[0]);
+      setSearchState("found");
+      setQuantity("");
+      setProductNameInput("");
+      setTimeout(() => quantityRef.current?.focus(), 100);
+    } else {
+      // 여러 개면 기존 모달 재사용
+      setFoundCandidates(matched);
+      setShowCandidateModal(true);
+    }
+  };
+  
   // 락기능 추가
   const handleLock = async () => {
     const now = new Date();
@@ -227,6 +265,7 @@ export function InventoryPage() {
 
   function handleScanDetected(barcode: string) {
     setBarcodeInput(barcode);
+    setProductNameInput("");
     setShowScanner(false);
     handleSearch(barcode);
   }
@@ -329,6 +368,60 @@ export function InventoryPage() {
           }}
         />
       )}
+
+      
+      {showCandidateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-card rounded-2xl shadow-xl w-full max-w-sm p-5">
+            <h2 className="text-base font-bold text-foreground mb-1">
+              검색 결과 선택
+            </h2>
+            <p className="text-xs text-muted-foreground mb-4">
+              총 {foundCandidates.length}개 상품이 검색되었습니다.
+            </p>
+
+            <ul className="space-y-2 max-h-72 overflow-y-auto">
+              {foundCandidates.map((product) => (
+                <li key={product.code}>
+                  <button
+                    onClick={() => {
+                      setCurrentProduct(product);
+                      setSearchState("found");
+                      setQuantity("");
+                      setShowCandidateModal(false);
+                      setFoundCandidates([]);
+                      setBarcodeInput("");
+                      setTimeout(() => quantityRef.current?.focus(), 100);
+                    }}
+                    className="w-full text-left px-4 py-3 rounded-xl border border-border hover:bg-muted/50 transition-colors"
+                  >
+                    <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                      {product.code}
+                    </span>
+                    <p className="text-sm font-semibold text-foreground mt-1">
+                      {product.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground font-mono">
+                      {product.barcode}
+                    </p>
+                  </button>
+                </li>
+              ))}
+            </ul>
+
+            <button
+              onClick={() => {
+                setShowCandidateModal(false);
+                setFoundCandidates([]);
+              }}
+              className="mt-4 w-full py-2.5 rounded-xl border border-border text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
+      
       {showProductManager && (
         <ProductManager
           products={products}
@@ -374,20 +467,21 @@ export function InventoryPage() {
             onClose={() => setShowScanner(false)}
           />
         )}
-        <div className="bg-card border border-card-border rounded-xl shadow-sm p-5">
+        <div className="bg-card border border-card-border rounded-xl shadow-sm p-4">
           <h2 className="font-semibold text-sm text-muted-foreground mb-4 flex items-center gap-2">
             <Barcode className="w-4 h-4" />
             상품코드 or 바코드 입력 / 스캔
           </h2>
 
-          <div className="flex gap-2 mb-4">
-            <div className="flex-1 relative">
+          <div className="flex gap-3">
+            <div className="flex flex-col">
+            <div className="flex-1 relative ">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 id="barcode-input"
                 type="text"
                 disabled={isCalendarView || isLocked} // isLocked 추가!
-                className={`w-full pl-8 pr-3 py-2.5 border border-input rounded-lg text-sm mt-[5px] mb-[5px] ${
+                className={`w-full pl-8 pr-1 py-2.5 border border-input rounded-lg text-sm mt-[5px] mb-[5px] ${
                   isCalendarView || isLocked
                     ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60"
                     : "bg-background focus:outline-none focus:ring-2 focus:ring-ring"
@@ -399,8 +493,36 @@ export function InventoryPage() {
                 autoComplete="off"
               />
             </div>
+            
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  id="product-name-input"
+                  type="text"
+                  disabled={isCalendarView || isLocked}
+                  className={`w-full pl-8 pr-1 py-2.5 border border-input rounded-lg text-sm mt-[5px] mb-[5px] ${
+                    isCalendarView || isLocked
+                      ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60"
+                      : "bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  }`}
+                  placeholder="상품명 입력"
+                  value={productNameInput}
+                  onChange={(e) => setProductNameInput(e.target.value)}
+                  autoComplete="off"
+                />
+              </div>
+               </div>
+              
             <button
-              onClick={() => handleSearch()}
+              onClick={() => {
+                if (productNameInput.trim()) {
+                  setBarcodeInput(""); // 바코드 초기화
+                  handleProductNameSearch();
+                } else {
+                  setProductNameInput(""); // 상품명 초기화
+                  handleSearch();
+                }
+              }}
               disabled={isCalendarView || isLocked}
               className={`px-3.5 py-1.5 border border-gray-500 bg-primary  text-primary-foreground  rounded-lg font-medium transition-opacity ${
                 isCalendarView || isLocked
@@ -413,7 +535,7 @@ export function InventoryPage() {
             <button
               onClick={() => setShowScanner(true)}
               disabled={isCalendarView || isLocked}
-              className={`flex items-center gap-0.5 px-1 py-1.5 bg-sidebar text-sidebar-foreground rounded-lg font-medium transition-opacity ${
+              className={`flex-2 flex-col justify-center gap-2 px-3 py-3 bg-sidebar text-sidebar-foreground text-sm rounded-lg font-bold transition-opacity ${
                 isCalendarView || isLocked
                   ? "opacity-50 cursor-not-allowed"
                   : "hover:opacity-90"
