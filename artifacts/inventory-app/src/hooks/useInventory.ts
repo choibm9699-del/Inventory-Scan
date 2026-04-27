@@ -14,7 +14,13 @@ import type { InventoryRecord } from "../types";
 export function useInventory() {
   const [records, setRecords] = useState<InventoryRecord[]>([]);
   
-  const getDateKey = () => new Date().toISOString().split('T')[0];
+ // const getDateKey = () => new Date().toISOString().split('T')[0];
+
+  // 날짜 포맷을 하나로 고정 (YYYY-MM-DD)
+  const getDateKey = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
   
   // 1. 데이터 실시간 불러오기 (Read)
 useEffect(() => {
