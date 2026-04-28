@@ -23,7 +23,7 @@ export function useProducts() {
         // Firebase 객체를 배열로 변환
         const list = Object.keys(data).map((key) => ({
           ...data[key],
-        })).filter((p) => p.code && p.name && p.barcode) as Product[];
+        })).filter((p) => p.name && (p.code || p.barcode)) as Product[];
         setProducts(list);
       } else {
         // 데이터가 없으면 기본 상품들로 DB 세팅 (선택 사항)
@@ -38,7 +38,8 @@ export function useProducts() {
   // 바코드를 고유 키로 사용하여 중복 등록 방지
   const addProduct = useCallback(async (product: Product) => {
     try {
-      const productRef = ref(db, `products/${product.barcode}`);
+      const key = product.code || product.barcode;
+      const productRef = ref(db, `products/${key}`);
       await set(productRef, product);
     } catch (error) {
       console.error("상품 추가 실패:", error);
@@ -49,7 +50,8 @@ export function useProducts() {
   const updateProduct = useCallback(
     async (barcode: string, updates: Partial<Product>) => {
       try {
-        const productRef = ref(db, `products/${barcode}`);
+        const key = updates.code || barcode;
+        const productRef = ref(db, `products/${key}`);
         await update(productRef, updates);
       } catch (error) {
         console.error("상품 수정 실패:", error);
@@ -82,7 +84,8 @@ export function useProducts() {
       try {
         const productsRef = ref(db, "products");
         const defaultData = defaultProducts.reduce((acc, curr) => {
-          acc[curr.barcode] = curr;
+          const key = curr.code || curr.barcode;
+          acc[key] = curr;
           return acc;
         }, {} as any);
 
