@@ -78,7 +78,7 @@ export function ProductManager({
   }
 
   function startEdit(product: Product) {
-    setEditingBarcode(product.barcode);
+    setEditingBarcode(product.code || product.barcode);
     setEditForm({ ...product });
   }
 
@@ -202,7 +202,7 @@ export function ProductManager({
             }
 
             // 바코드가 있으면 바코드를 키로, 없으면 상품코드를 키로 사용
-            const key = barcode || code;
+            const key = code || barcode;
 
             if (!key) {
               errors.push(`${rowNum}행: 바코드와 상품코드 모두 없어 제외됨`);
@@ -518,10 +518,10 @@ export function ProductManager({
             <tbody>
               {products.map((p) => (
                 <tr
-                  key={p.barcode}
+                  key={p.code || p.barcode}
                   className="border-t border-border hover:bg-muted/30 transition-colors"
                 >
-                  {editingBarcode === p.barcode && editForm ? (
+                  {editingBarcode === (p.code || p.barcode) && editForm ? (
                     <>
                       <td className="px-4 py-2 font-mono text-xs text-muted-foreground text-center">
                         {p.barcode}
@@ -581,7 +581,7 @@ export function ProductManager({
                               if (
                                 confirm(`"${p.name}"을(를) 삭제하시겠습니까?`)
                               )
-                                onDelete(p.barcode);
+                                onDelete(p.code || p.barcode);
                             }}
                             className="p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors"
                           >
