@@ -55,6 +55,29 @@ function App() {
       setLoading(false);
     }
   };
+/*
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginId || !loginPw) return alert("아이디와 비밀번호를 입력해주세요.");
+
+    setLoading(true);
+    try {
+      const email = `${loginId}@inventorybm.com`; // 자동 변환
+      await signInWithEmailAndPassword(auth, email, loginPw);
+
+      if (rememberMe) {
+        localStorage.setItem("rememberId", loginId);
+      } else {
+        localStorage.removeItem("rememberId");
+      }
+      setIsLoggedIn(true);
+
+    } catch (error) {
+      alert("아이디 또는 비밀번호가 틀렸습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };*/
 
   // 1. 로그인 전 화면
   if (!isLoggedIn) {

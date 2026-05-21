@@ -174,13 +174,12 @@ export function InventoryPage() {
   // 검색기능
   function handleSearch(barcode?: string) {
     const code = (barcode ?? barcodeInput).trim();
-    if (!code) return;
+    const isBarcode = code.length > 5;  // 6자리 이상 → 바코드, 5자리 이하 → 상품코드
 
-    const matched = products.filter(
-      (p) =>
-        p.barcode === code ||
-        p.code === code ||
-        (p.code?.endsWith(code) ?? false)
+    const matched = products.filter((p) =>
+      isBarcode
+        ? p.barcode === code                                      // 바코드 정확 일치
+        : p.code === code || (p.code?.endsWith(code) ?? false)   // 상품코드 검색
     );
 
     if (matched.length === 0) {
@@ -485,7 +484,7 @@ export function InventoryPage() {
                       ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60"
                       : "bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                   }`}
-                  placeholder="상품코드 입력"
+                  placeholder="상품코드 or 바코드 입력"
                   value={barcodeInput}
                   onChange={(e) => setBarcodeInput(e.target.value)}
                   onKeyDown={handleBarcodeKeyDown}
