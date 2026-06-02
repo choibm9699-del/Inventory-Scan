@@ -69,7 +69,7 @@ export function InventoryTable({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [sortOrder, setSortOrder] = useState<
     "desc" | "asc" | "chosung" | "code"
-  >("desc");
+  >("chosung");
   const isDbLoaded = Object.keys(dbMap).length > 0;
   // [핵심 비교 로직] 전산 데이터(dbMap)와 스캔 데이터(records)를 결합
   const displayList = useMemo(() => {
@@ -163,13 +163,13 @@ export function InventoryTable({
           <button
             onClick={() =>
               setSortOrder((prev) =>
-                prev === "desc"
+                prev === "chosung"
                   ? "asc"
                   : prev === "asc"
-                    ? "chosung"
-                    : prev === "chosung"
+                    ? "desc"
+                    : prev === "desc"
                       ? "code"
-                      : "desc",
+                      : "chosung",
               )
             }
             className="flex items-center gap-1.5 px-2 py-3 w-24 bg-white border border-gray-300 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-50 active:bg-gray-100 transition-colors"
@@ -294,11 +294,13 @@ export function InventoryTable({
 
                     <span
                       className={`text-[13px] font-bold mt-1 ${
-                        item.scannedQty !== item.systemQty
-                          ? "text-red-500"
+                        item.scannedQty < item.systemQty
+                        ? "text-red-500"       // 전산보다 적으면 적색
+                        : item.scannedQty > item.systemQty
+                          ? "text-green-500"   // 전산보다 많으면 녹색
                           : item.systemQty > 0
-                            ? "text-blue-500"
-                            : "text-gray-300"
+                            ? "text-blue-500"  // 같으면 파란색
+                            : "text-gray-300" // 둘 다 0이면 회색                        
                       }`}
                     >
                       (전산: {item.systemQty.toLocaleString()})
