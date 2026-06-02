@@ -180,7 +180,7 @@ export function InventoryTable({
               : sortOrder === "asc"
                 ? "수량 낮은순"
                 : sortOrder === "chosung"
-                  ? "상품순"
+                  ? "상품명 순"
                   : "상품코드순"}
           </button>
 
@@ -294,9 +294,9 @@ export function InventoryTable({
 
                     <span
                       className={`text-[13px] font-bold mt-1 ${
-                        item.scannedQty < item.systemQty
+                        item.scannedQty > item.systemQty
                         ? "text-red-500"       // 전산보다 적으면 적색
-                        : item.scannedQty > item.systemQty
+                        : item.scannedQty < item.systemQty
                           ? "text-green-500"   // 전산보다 많으면 녹색
                           : item.systemQty > 0
                             ? "text-blue-500"  // 같으면 파란색
