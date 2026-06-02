@@ -160,8 +160,8 @@ export function InventoryTable({
             : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
         }`}
       >
-      {showOnlyDiff ? <List className="w-4 h-4" /> : <CheckCircle className="w-4 h-4 text-blue-500" />}
-        {showOnlyDiff ? "전체 보기" : "완료 숨김"}
+      {showOnlyDiff ?  <CheckCircle className="w-4 h-4 text-blue-500" /> : <List className="w-4 h-4" />}
+        {showOnlyDiff ? "완료 숨김" : "전체 보기"}
       </button>
           )}
         </div>
