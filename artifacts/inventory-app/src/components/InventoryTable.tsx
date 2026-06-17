@@ -242,7 +242,7 @@ export function InventoryTable({
           </button>
           <button
             onClick={onExport}
-            disabled={!isDbLoaded}
+            //disabled={!isDbLoaded}
             className="flex items-center gap-1 px-2 py-3 bg-green-400 border border-gray-500 text-black rounded-xl text-sm font-black hover:bg-green-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FileDown className="w-4 h-4" /> 재고저장
