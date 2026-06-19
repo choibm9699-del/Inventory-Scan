@@ -581,7 +581,7 @@ export function InventoryPage() {
                     htmlFor="quantity-input"
                     className="text-xs font-medium text-muted-foreground block mb-1.5"
                   >
-                    재고 수량
+                    재고 수량 입력 
                   </label>
                   <input
                     id="quantity-input"
