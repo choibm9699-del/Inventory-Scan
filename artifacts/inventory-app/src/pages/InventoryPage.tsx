@@ -690,7 +690,8 @@ export function InventoryPage() {
                   id="quantity-input"
                   ref={quantityRef}
                   type="number"
-                  className="w-full px-4 py-3 text-2xl font-bold border-2 border-input rounded-xl bg-background focus:outline-none focus:border-primary text-center ml-[1px] mr-[1px]"
+                  disabled={!currentProduct}
+                  className="w-full px-4 py-3 text-2xl font-bold border-2 border-input rounded-xl bg-background focus:outline-none focus:border-primary text-center ml-[1px] mr-[1px] disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-muted"
                   placeholder="0"
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
