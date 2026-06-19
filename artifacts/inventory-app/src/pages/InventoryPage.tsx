@@ -659,7 +659,7 @@ export function InventoryPage() {
                   </>
                 ) : (
                   <div className="py-2 text-sm text-muted-foreground text-left font-semibold mt-[0px] mb-[15px] ml-[10px]">
-                    바코드를 스캔하거나 상품을 검색해 주세요.
+                    바코드 스캔 또는 상품 검색해 주세요.
                   </div>
                 )}
               </div>
