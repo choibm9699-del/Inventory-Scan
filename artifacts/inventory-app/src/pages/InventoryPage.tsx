@@ -670,7 +670,7 @@ export function InventoryPage() {
                 </span>
                 <button
                   onClick={handleMinusSave} // 새로 만든 빼기 버튼
-                  disabled={!quantity || parseFloat(quantity) < 0 || isSaving}
+                  disabled={!currentProduct || !quantity || parseFloat(quantity) < 0 || isSaving}
                   className="px-8 py-2.5 bg-red-500 text-white rounded-xl text-base font-bold hover:bg-red-600 disabled:opacity-40 transition-colors"
                 >        
                   차감
@@ -700,7 +700,7 @@ export function InventoryPage() {
               </div>
               <button
                 onClick={handleSave}
-                disabled={!quantity || parseFloat(quantity) < 0 || isSaving} // isSaving 추가
+                disabled={!currentProduct || !quantity || parseFloat(quantity) < 0 || isSaving}
                 className="px-8 py-5 bg-primary text-primary-foreground rounded-xl text-base font-bold hover:opacity-90 disabled:opacity-40"
               >
                 {isSaving ? "저장 중..." : "저장"}
