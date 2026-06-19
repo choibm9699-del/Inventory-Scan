@@ -273,8 +273,14 @@ export function InventoryPage() {
     if (!currentProduct || isSaving) return;
 
     const qty = parseFloat(quantity);
-    // 수량이 없거나 0 이하이면 차감하지 않음
     if (isNaN(qty) || qty <= 0) return;
+
+    // ---------------- [확인창 추가] ----------------
+    // 취소를 누르면 함수를 여기서 종료하여 저장을 막습니다.
+    if (!confirm(`[차감 알림]\n${currentProduct.name} 제품을 ${qty}개 차감하시겠습니까?`)) {
+      return; 
+    }
+    // ---------------------------------------------
 
     setIsSaving(true);
 
@@ -289,26 +295,16 @@ export function InventoryPage() {
         (r) => r.barcode === currentProduct.barcode && r.date === todayStr,
       );
 
-      // 입력된 수량을 음수(-)로 변환
       const finalQty = -qty;
 
       if (existingRecord && existingRecord.id) {
-        // 오늘 이미 입력된 내역이 있다면 기존 수량에서 차감 (+ 버튼과 동일하게 합산하되 값이 음수)
-        const recordRef = ref(
-          db,
-          `inventory_records/${dateKey}/${existingRecord.id}`,
-        );
-
+        const recordRef = ref(db, `inventory_records/${dateKey}/${existingRecord.id}`);
         await update(recordRef, {
           quantity: existingRecord.quantity + finalQty,
           timestamp: serverTimestamp(),
-          time: new Date().toLocaleTimeString("ko-KR", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
+          time: new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
         });
       } else {
-        // 오늘 처음 입력하는 바코드라면 바로 음수 값으로 신규 생성
         const newRecord = {
           barcode: currentProduct.barcode,
           code: currentProduct.code,
@@ -316,15 +312,11 @@ export function InventoryPage() {
           quantity: finalQty,
           timestamp: serverTimestamp(),
           date: todayStr,
-          time: new Date().toLocaleTimeString("ko-KR", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
+          time: new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
         };
         await push(dailyRecordsRef, newRecord);
       }
 
-      // 입력창 초기화 및 포커스 이동
       setLastSaved(`${currentProduct.name} (${qty}개 차감)`);
       setBarcodeInput("");
       setCurrentProduct(null);
@@ -342,7 +334,6 @@ export function InventoryPage() {
       setIsSaving(false);
     }
   }
-
 
 
   
@@ -422,6 +413,16 @@ export function InventoryPage() {
     }
   }
   const isCalendarView = viewMode === "calendar";
+
+  // 오늘 날짜 문자열 포맷 생성 (ko-KR 형식)
+  const todayDot = new Date().toLocaleDateString("ko-KR");
+
+  // 오늘 날짜이면서 현재 검색된 상품의 실사 수량 총합 계산
+  const currentScannedQty = currentProduct 
+    ? records
+        .filter((r) => r.barcode === currentProduct.barcode && r.date === todayDot)
+        .reduce((sum, r) => sum + (Number(r.quantity) || 0), 0)
+    : 0;
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
@@ -600,7 +601,7 @@ export function InventoryPage() {
                 }
               }}
               disabled={isCalendarView || isLocked}
-              className={`px-3.5 py-1.5 border border-gray-500 bg-primary  text-primary-foreground  rounded-lg font-medium transition-opacity ${
+              className={`px-3.5 py-1 border border-gray-500 bg-primary  text-primary-foreground  rounded-lg font-medium transition-opacity ${
                 isCalendarView || isLocked
                   ? "opacity-50 cursor-not-allowed"
                   : "hover:opacity-90"
@@ -639,60 +640,72 @@ export function InventoryPage() {
           )}
 
           {/* 상품이 검색되었을 때만 보여주는 영역 */}
-          {searchState === "found" && currentProduct && (
-            <div className="bg-muted/30 border border-border rounded-xl p-4">
+           <div className="bg-muted/30 border border-border rounded-xl p-1 mt-[10px]">
 
-              
-              <div className="flex gap-3 items-end">
-                <div class="flex-1">
-                  <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                    {currentProduct.code}
-                  </span>
-                  <h3 className="text-xl font-bold text-foreground mt-1">
-                    {currentProduct.name}
-                  </h3>
-                  <p className="text-xs text-muted-foreground font-mono">
-                   {currentProduct.barcode}
-                 </p>
+            <div className="flex gap-3 items-end">
+              <div className="flex-1 ">
+                {/* [수정] 상품 정보가 있을 때만 표시하고, 없을 때는 안내 문구만 표시 */}
+                {currentProduct ? (
+                  <>
+                    <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                      {currentProduct.code}
+                    </span>
+                    <h3 className="text-xl font-bold text-foreground mt-1">
+                      {currentProduct.name}
+                    </h3>
+                    <p className="text-xs text-muted-foreground font-mono">
+                      {currentProduct.barcode}
+                    </p>
+                  </>
+                ) : (
+                  <div className="py-2 text-sm text-muted-foreground text-left font-semibold mt-[0px] mb-[15px] ml-[10px]">
+                    바코드를 스캔하거나 상품을 검색해 주세요.
                   </div>
+                )}
+              </div>
+
+              <div className="flex flex-col items-start justify-between gap-1 mb-1.5">
+                <span className="text-xs font-bold bg-muted text-foreground px-2 py-0.5 rounded-full">
+                  수량 : {currentProduct ? `${currentScannedQty}개` : "0개"}
+                </span>
                 <button
                   onClick={handleMinusSave} // 새로 만든 빼기 버튼
                   disabled={!quantity || parseFloat(quantity) < 0 || isSaving}
-                  className="px-8 py-3 bg-primary text-primary-foreground rounded-xl text-base font-bold hover:opacity-90 disabled:opacity-40"
-                >
-                  수정
-                </button>
-              </div>
-
-              <div className="flex gap-3 items-end">
-                <div className="flex-1">
-                  <label
-                    htmlFor="quantity-input"
-                    className="text-xs font-medium text-muted-foreground block mb-1.5"
-                  >
-                    재고 수량 입력
-                  </label>
-                  <input
-                    id="quantity-input"
-                    ref={quantityRef}
-                    type="number"
-                    className="w-full px-4 py-3 text-2xl font-bold border-2 border-input rounded-xl bg-background focus:outline-none focus:border-primary text-center"
-                    placeholder="0"
-                    value={quantity}
-                    onChange={(e) => setQuantity(e.target.value)}
-                    onKeyDown={handleQuantityKeyDown}
-                  />
-                </div>
-                <button
-                  onClick={handleSave}
-                  disabled={!quantity || parseFloat(quantity) < 0 || isSaving} // isSaving 추가
-                  className="px-8 py-6 bg-primary text-primary-foreground rounded-xl text-base font-bold hover:opacity-90 disabled:opacity-40"
-                >
-                  {isSaving ? "저장 중..." : "저장"}
+                  className="px-8 py-2.5 bg-red-500 text-white rounded-xl text-base font-bold hover:bg-red-600 disabled:opacity-40 transition-colors"
+                >        
+                  차감
                 </button>
               </div>
             </div>
-          )}
+
+            <div className="flex gap-3 items-end">
+              <div className="flex-1">
+                <label
+                  htmlFor="quantity-input"
+                  className="text-xs font-medium text-muted-foreground block mt-1.5 ml-[10px]"
+                >
+                  재고 수량 입력
+                </label>
+                <input
+                  id="quantity-input"
+                  ref={quantityRef}
+                  type="number"
+                  className="w-full px-4 py-3 text-2xl font-bold border-2 border-input rounded-xl bg-background focus:outline-none focus:border-primary text-center ml-[1px] mr-[1px]"
+                  placeholder="0"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  onKeyDown={handleQuantityKeyDown}
+                />
+              </div>
+              <button
+                onClick={handleSave}
+                disabled={!quantity || parseFloat(quantity) < 0 || isSaving} // isSaving 추가
+                className="px-8 py-5 bg-primary text-primary-foreground rounded-xl text-base font-bold hover:opacity-90 disabled:opacity-40"
+              >
+                {isSaving ? "저장 중..." : "저장"}
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* View mode tabs */}
