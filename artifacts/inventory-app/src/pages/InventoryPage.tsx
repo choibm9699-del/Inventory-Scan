@@ -37,7 +37,7 @@ type ViewMode = "list" | "calendar";
 export function InventoryPage() {
   const { products, addProduct, updateProduct, deleteProduct, resetToDefault } =
     useProducts();
-  const { records,allRecords, deleteRecord, clearAll } = useInventory();
+  const { records, allRecords, deleteRecord, clearAll } = useInventory();
   const [isSaving, setIsSaving] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState("");
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
@@ -60,7 +60,7 @@ export function InventoryPage() {
 
   useEffect(() => {
     const now = new Date();
-    const dateKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    const dateKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     const dailyRef = ref(db, `daily_uploads/${dateKey}`);
 
     const unsubscribe = onValue(dailyRef, (snapshot) => {
@@ -113,7 +113,7 @@ export function InventoryPage() {
       // 날짜 및 시간 설정
       const now = new Date();
       const d = new Date();
-      const dateKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       const todayStr = now.toLocaleDateString("ko-KR");
       const timeStr = now.toLocaleTimeString("ko-KR", {
         hour: "2-digit",
@@ -174,12 +174,13 @@ export function InventoryPage() {
   // 검색기능
   function handleSearch(barcode?: string) {
     const code = (barcode ?? barcodeInput).trim();
-    const isBarcode = code.length > 5;  // 6자리 이상 → 바코드, 5자리 이하 → 상품코드
+    const isBarcode = code.length > 5; // 6자리 이상 → 바코드, 5자리 이하 → 상품코드
 
-    const matched = products.filter((p) =>
-      isBarcode
-        ? p.barcode === code                                      // 바코드 정확 일치
-        : p.code === code || (p.code?.endsWith(code) ?? false)   // 상품코드 검색
+    const matched = products.filter(
+      (p) =>
+        isBarcode
+          ? p.barcode === code // 바코드 정확 일치
+          : p.code === code || (p.code?.endsWith(code) ?? false), // 상품코드 검색
     );
 
     if (matched.length === 0) {
@@ -202,8 +203,8 @@ export function InventoryPage() {
     if (!productNameInput.trim()) return;
 
     const keyword = productNameInput.trim().toLowerCase();
-    const matched = products.filter((p) =>
-      p.name?.toLowerCase().includes(keyword) ?? false
+    const matched = products.filter(
+      (p) => p.name?.toLowerCase().includes(keyword) ?? false,
     );
 
     if (matched.length === 0) {
@@ -267,7 +268,84 @@ export function InventoryPage() {
     setShowScanner(false);
     handleSearch(barcode);
   }
+  //handleMinusSave 수정기능
+  async function handleMinusSave() {
+    if (!currentProduct || isSaving) return;
 
+    const qty = parseFloat(quantity);
+    // 수량이 없거나 0 이하이면 차감하지 않음
+    if (isNaN(qty) || qty <= 0) return;
+
+    setIsSaving(true);
+
+    try {
+      const now = new Date();
+      const dateKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      const todayStr = new Date().toLocaleDateString("ko-KR");
+
+      const dailyRecordsRef = ref(db, `inventory_records/${dateKey}`);
+
+      const existingRecord = records.find(
+        (r) => r.barcode === currentProduct.barcode && r.date === todayStr,
+      );
+
+      // 입력된 수량을 음수(-)로 변환
+      const finalQty = -qty;
+
+      if (existingRecord && existingRecord.id) {
+        // 오늘 이미 입력된 내역이 있다면 기존 수량에서 차감 (+ 버튼과 동일하게 합산하되 값이 음수)
+        const recordRef = ref(
+          db,
+          `inventory_records/${dateKey}/${existingRecord.id}`,
+        );
+
+        await update(recordRef, {
+          quantity: existingRecord.quantity + finalQty,
+          timestamp: serverTimestamp(),
+          time: new Date().toLocaleTimeString("ko-KR", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        });
+      } else {
+        // 오늘 처음 입력하는 바코드라면 바로 음수 값으로 신규 생성
+        const newRecord = {
+          barcode: currentProduct.barcode,
+          code: currentProduct.code,
+          name: currentProduct.name,
+          quantity: finalQty,
+          timestamp: serverTimestamp(),
+          date: todayStr,
+          time: new Date().toLocaleTimeString("ko-KR", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        };
+        await push(dailyRecordsRef, newRecord);
+      }
+
+      // 입력창 초기화 및 포커스 이동
+      setLastSaved(`${currentProduct.name} (${qty}개 차감)`);
+      setBarcodeInput("");
+      setCurrentProduct(null);
+      setQuantity("");
+      setSearchState("idle");
+
+      setTimeout(() => setLastSaved(null), 3000);
+      setTimeout(() => {
+        document.getElementById("barcode-input")?.focus();
+      }, 100);
+    } catch (error) {
+      console.error("차감 저장 에러:", error);
+      alert("데이터 처리에 실패했습니다.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+
+
+  
   //handsave 저장기능
   async function handleSave() {
     if (!currentProduct || isSaving) return;
@@ -280,7 +358,7 @@ export function InventoryPage() {
     try {
       // 1. 오늘 날짜 문자열 생성 (저장 형식과 일치하도록
       const now = new Date();
-      const dateKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+      const dateKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
       const todayStr = new Date().toLocaleDateString("ko-KR");
 
       const dailyRecordsRef = ref(db, `inventory_records/${dateKey}`);
@@ -563,16 +641,27 @@ export function InventoryPage() {
           {/* 상품이 검색되었을 때만 보여주는 영역 */}
           {searchState === "found" && currentProduct && (
             <div className="bg-muted/30 border border-border rounded-xl p-4">
-              <div className="mb-3">
-                <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                  {currentProduct.code}
-                </span>
-                <h3 className="text-xl font-bold text-foreground mt-1">
-                  {currentProduct.name}
-                </h3>
-                <p className="text-xs text-muted-foreground font-mono">
-                  {currentProduct.barcode}
-                </p>
+
+              
+              <div className="flex gap-3 items-end">
+                <div class="flex-1">
+                  <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                    {currentProduct.code}
+                  </span>
+                  <h3 className="text-xl font-bold text-foreground mt-1">
+                    {currentProduct.name}
+                  </h3>
+                  <p className="text-xs text-muted-foreground font-mono">
+                   {currentProduct.barcode}
+                 </p>
+                  </div>
+                <button
+                  onClick={handleMinusSave} // 새로 만든 빼기 버튼
+                  disabled={!quantity || parseFloat(quantity) < 0 || isSaving}
+                  className="px-8 py-3 bg-primary text-primary-foreground rounded-xl text-base font-bold hover:opacity-90 disabled:opacity-40"
+                >
+                  수정
+                </button>
               </div>
 
               <div className="flex gap-3 items-end">
@@ -581,7 +670,7 @@ export function InventoryPage() {
                     htmlFor="quantity-input"
                     className="text-xs font-medium text-muted-foreground block mb-1.5"
                   >
-                    재고 수량 입력 
+                    재고 수량 입력
                   </label>
                   <input
                     id="quantity-input"
@@ -597,7 +686,7 @@ export function InventoryPage() {
                 <button
                   onClick={handleSave}
                   disabled={!quantity || parseFloat(quantity) < 0 || isSaving} // isSaving 추가
-                  className="px-8 py-3 bg-primary text-primary-foreground rounded-xl text-base font-bold hover:opacity-90 disabled:opacity-40"
+                  className="px-8 py-6 bg-primary text-primary-foreground rounded-xl text-base font-bold hover:opacity-90 disabled:opacity-40"
                 >
                   {isSaving ? "저장 중..." : "저장"}
                 </button>
@@ -641,7 +730,7 @@ export function InventoryPage() {
             onExport={async () => {
               // 1. 오늘 날짜 키 (비교용)
               const d = new Date();
-              const todayDash = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+              const todayDash = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
               const todayDot = d.toLocaleDateString("ko-KR");
               const todayScanned = records.filter((r) => r.date === todayDot); // 저장형식이 ko-KR이므로 하나만
 
