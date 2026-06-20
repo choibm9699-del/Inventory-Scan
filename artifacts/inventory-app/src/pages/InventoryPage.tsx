@@ -449,11 +449,11 @@ export function InventoryPage() {
 
       {showCandidateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-          <div className="bg-card rounded-2xl shadow-xl w-full max-w-sm p-5">
-            <h2 className="text-base font-bold text-foreground mb-1">
+          <div className="bg-card rounded-lg shadow-xl w-full max-w-sm p-5">
+            <h2 className="text-base font-bold text-foreground mb-1 ml-[5px]">
               검색 결과 선택
             </h2>
-            <p className="text-xs text-muted-foreground mb-4">
+            <p className="text-xs text-muted-foreground mb-4 ml-[5px]">
               총 {foundCandidates.length}개 상품이 검색되었습니다.
             </p>
 
@@ -470,17 +470,22 @@ export function InventoryPage() {
                       setBarcodeInput("");
                       setTimeout(() => quantityRef.current?.focus(), 100);
                     }}
-                    className="w-full text-left px-4 py-3 rounded-xl border border-border hover:bg-muted/50 transition-colors"
+                    className="w-full px-2 py-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
                   >
-                    <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                    <div className="flex-1 flex gap-4 items-center">
+                    <span className="text-[13px] font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-sm ml-[2px]">
                       {product.code}
                     </span>
-                    <p className="text-sm font-semibold text-foreground mt-1">
+
+                      <p className="text-xs text-muted-foreground font-mono">
+                        {product.barcode}
+                      </p>
+                       </div>
+                    <p className="text-[22px] text-left font-semibold text-foreground mt-1 ml-[5px]">
                       {product.name}
                     </p>
-                    <p className="text-xs text-muted-foreground font-mono">
-                      {product.barcode}
-                    </p>
+                    
+                    
                   </button>
                 </li>
               ))}
@@ -647,31 +652,31 @@ export function InventoryPage() {
                 {/* [수정] 상품 정보가 있을 때만 표시하고, 없을 때는 안내 문구만 표시 */}
                 {currentProduct ? (
                   <>
-                    <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                    <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-sm ml-[5px]">
                       {currentProduct.code}
                     </span>
-                    <h3 className="text-xl font-bold text-foreground mt-1">
+                    <h3 className="text-xl font-bold text-foreground mt-1 ml-[5px]">
                       {currentProduct.name}
                     </h3>
-                    <p className="text-xs text-muted-foreground font-mono">
+                    <p className="text-xs text-muted-foreground font-mono ml-[10px]">
                       {currentProduct.barcode}
                     </p>
                   </>
                 ) : (
                   <div className="py-2 text-sm text-muted-foreground text-left font-semibold mt-[0px] mb-[15px] ml-[10px]">
-                    바코드 스캔 또는 상품 검색해 주세요.
+                    스캔 또는 상품 검색해 주세요.
                   </div>
                 )}
               </div>
 
               <div className="flex flex-col items-start justify-between gap-1 mb-1.5">
-                <span className="text-xs font-bold bg-muted text-foreground px-2 py-0.5 rounded-full">
+                <span className="text-xs font-bold bg-muted text-foreground px-2 py-0.5 rounded-sm">
                   수량 : {currentProduct ? `${currentScannedQty}개` : "0개"}
                 </span>
                 <button
                   onClick={handleMinusSave} // 새로 만든 빼기 버튼
                   disabled={!currentProduct || !quantity || parseFloat(quantity) < 0 || isSaving}
-                  className="px-8 py-2.5 bg-red-500 text-white rounded-xl text-base font-bold hover:bg-red-600 disabled:opacity-40 transition-colors"
+                  className="px-8 py-2.5 bg-red-500 text-white rounded-lg text-base font-bold hover:bg-red-600 disabled:opacity-40 transition-colors"
                 >        
                   차감
                 </button>
@@ -691,7 +696,7 @@ export function InventoryPage() {
                   ref={quantityRef}
                   type="number"
                   disabled={!currentProduct}
-                  className="w-full px-4 py-3 text-2xl font-bold border-2 border-input rounded-xl bg-background focus:outline-none focus:border-primary text-center ml-[1px] mr-[1px] disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-muted"
+                  className="w-full px-4 py-3 text-2xl font-bold border-2 border-input rounded-lg bg-background focus:outline-none focus:border-primary text-center ml-[1px] mr-[1px] disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-muted"
                   placeholder="0"
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
@@ -701,7 +706,7 @@ export function InventoryPage() {
               <button
                 onClick={handleSave}
                 disabled={!currentProduct || !quantity || parseFloat(quantity) < 0 || isSaving}
-                className="px-8 py-5 bg-primary text-primary-foreground rounded-xl text-base font-bold hover:opacity-90 disabled:opacity-40"
+                className="px-8 py-5 bg-primary text-primary-foreground rounded-lg text-base font-bold hover:opacity-90 disabled:opacity-40"
               >
                 {isSaving ? "저장 중..." : "저장"}
               </button>

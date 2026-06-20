@@ -211,7 +211,7 @@ export function InventoryTable({
             else if (window.confirm("재고조사를 완료하시겠습니까?")) onLock();
           }}
           disabled={!isDbLoaded || false}
-          className={`flex items-center gap-2 px-3 py-3 border border-gray-500 rounded-xl text-sm font-black transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+          className={`flex items-center gap-2 px-3 py-3 border border-gray-500 rounded-lg text-sm font-black transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
             isLocked
               ? "bg-gray-400 text-white"
               : "bg-red-400 text-black hover:bg-red-600 shadow-lg"
@@ -236,14 +236,14 @@ export function InventoryTable({
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isLocked}
-            className="flex items-center gap-1 px-2 py-3 bg-sidebar text-sidebar-foreground border border-gray-500 rounded-xl text-sm font-black hover:bg-gray-100 shadow-lg disabled:opacity-50"
+            className="flex items-center gap-1 px-2 py-3 bg-sidebar text-sidebar-foreground border border-gray-500 rounded-lg text-sm font-black hover:bg-gray-100 shadow-lg disabled:opacity-50"
           >
             <FileUp className="w-4 h-4" /> 재고등록
           </button>
           <button
             onClick={onExport}
             //disabled={!isDbLoaded}
-            className="flex items-center gap-1 px-2 py-3 bg-green-400 border border-gray-500 text-black rounded-xl text-sm font-black hover:bg-green-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-1 px-2 py-3 bg-green-400 border border-gray-500 text-black rounded-lg text-sm font-black hover:bg-green-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FileDown className="w-4 h-4" /> 재고저장
           </button>
