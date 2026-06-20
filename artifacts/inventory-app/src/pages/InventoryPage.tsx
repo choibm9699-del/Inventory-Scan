@@ -644,23 +644,29 @@ export function InventoryPage() {
             </div>
           )}
 
-          {/* 상품이 검색되었을 때만 보여주는 영역 */}
-           <div className="bg-muted/30 border border-border rounded-xl p-1 mt-[10px]">
+          {/* [수정] 상품 정보가 있을 때만 표시하고, 없을 때는 안내 문구만 표시 */}
+           <div className="bg-muted/30 border border-border rounded-xl p-2 mt-[10px]">
 
             <div className="flex gap-3 items-end">
               <div className="flex-1 ">
-                {/* [수정] 상품 정보가 있을 때만 표시하고, 없을 때는 안내 문구만 표시 */}
+                
                 {currentProduct ? (
                   <>
-                    <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-sm ml-[5px]">
+                    
+                    <div className="flex-1 flex gap-4 items-center">
+                    <span className="text-[15px] font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-sm ml-[5px]">
                       {currentProduct.code}
                     </span>
-                    <h3 className="text-xl font-bold text-foreground mt-1 ml-[5px]">
+                      
+                      <p className="text-xs text-muted-foreground font-mono">
+                        {currentProduct.barcode}
+                      </p>
+
+                      </div>
+                    <h3 className="text-[25px] font-bold text-foreground mt-1 ml-[5px]">
                       {currentProduct.name}
                     </h3>
-                    <p className="text-xs text-muted-foreground font-mono ml-[10px]">
-                      {currentProduct.barcode}
-                    </p>
+                    
                   </>
                 ) : (
                   <div className="py-2 text-sm text-muted-foreground text-left font-semibold mt-[0px] mb-[15px] ml-[10px]">
