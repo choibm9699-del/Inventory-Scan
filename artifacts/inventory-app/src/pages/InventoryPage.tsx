@@ -617,7 +617,7 @@ export function InventoryPage() {
             <button
               onClick={() => setShowScanner(true)}
               disabled={isCalendarView || isLocked}
-              className={`flex-2 flex flex-col items-center justify-center gap-2 px-3 py-3 bg-sidebar text-sidebar-foreground text-sm rounded-lg font-bold transition-opacity ${
+              className={`flex-2 flex flex-col items-center justify-center gap-2 px-3 py-3 bg-sidebar text-sidebar-foreground text-sm rounded-lg bg-gray-100 font-bold transition-opacity ${
                 isCalendarView || isLocked
                   ? "opacity-50 cursor-not-allowed"
                   : "hover:opacity-90"
@@ -682,7 +682,7 @@ export function InventoryPage() {
                 <button
                   onClick={handleMinusSave} // 새로 만든 빼기 버튼
                   disabled={!currentProduct || !quantity || parseFloat(quantity) < 0 || isSaving}
-                  className="px-8 py-2.5 bg-red-500 text-white rounded-lg text-base font-bold hover:bg-red-600 disabled:opacity-40 transition-colors"
+                  className="px-10 py-3.5 bg-red-500 text-white rounded-lg text-xl font-bold hover:bg-red-600 disabled:opacity-40 transition-colors"
                 >        
                   차감
                 </button>
@@ -693,7 +693,7 @@ export function InventoryPage() {
               <div className="flex-1">
                 <label
                   htmlFor="quantity-input"
-                  className="text-xs font-medium text-muted-foreground block mt-1.5 ml-[10px]"
+                  className="text-xs font-medium text-muted-foreground block mt-1.5 ml-[8px]"
                 >
                   재고 수량 입력
                 </label>
@@ -712,7 +712,7 @@ export function InventoryPage() {
               <button
                 onClick={handleSave}
                 disabled={!currentProduct || !quantity || parseFloat(quantity) < 0 || isSaving}
-                className="px-8 py-5 bg-primary text-primary-foreground rounded-lg text-base font-bold hover:opacity-90 disabled:opacity-40"
+                className="px-10 py-5 bg-primary text-primary-foreground rounded-lg text-xl font-bold hover:opacity-90 disabled:opacity-40"
               >
                 {isSaving ? "저장 중..." : "저장"}
               </button>

@@ -205,21 +205,7 @@ export function InventoryTable({
       </div>
       {/* 버튼 액션바 - UI 유지 */}
       <div className="px-5 py-1 border-t border-gray-100 flex items-center justify-between bg-gray-50/30 min-h-[64px]">
-        <button
-          onClick={() => {
-            if (isLocked) onUnlock();
-            else if (window.confirm("재고조사를 완료하시겠습니까?")) onLock();
-          }}
-          disabled={!isDbLoaded || false}
-          className={`flex items-center gap-2 px-3 py-3 border border-gray-500 rounded-lg text-sm font-black transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-            isLocked
-              ? "bg-gray-400 text-white"
-              : "bg-red-400 text-black hover:bg-red-600 shadow-lg"
-          }`}
-        >
-          <CheckCircle className="w-4 h-4" />
-          조사완료
-        </button>
+       
 
         <div className="flex-1 flex justify-end items-center gap-2">
           <input
