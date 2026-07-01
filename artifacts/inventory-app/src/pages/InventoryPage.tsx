@@ -645,16 +645,16 @@ export function InventoryPage() {
           )}
 
           {/* [수정] 상품 정보가 있을 때만 표시하고, 없을 때는 안내 문구만 표시 */}
-           <div className="bg-muted/30 border border-border rounded-xl p-2 mt-[10px]">
+           <div className="bg-muted/30 border border-border  rounded-xl p-2 mt-[10px]">
 
-            <div className="flex gap-3 items-end">
+            <div className="flex gap-3 items-end justify-between">
               <div className="flex-1 ">
                 
                 {currentProduct ? (
                   <>
                     
-                    <div className="flex-1 flex gap-4 items-center">
-                    <span className="text-[15px] font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-sm ml-[5px]">
+                    <div className="flex-1 flex gap-1 items-center">
+                    <span className="text-[15px] font-medium bg-primary/10 text-primary px-1 py-0.5 rounded-sm ml-[5px]">
                       {currentProduct.code}
                     </span>
                       
@@ -682,7 +682,7 @@ export function InventoryPage() {
                 <button
                   onClick={handleMinusSave} // 새로 만든 빼기 버튼
                   disabled={!currentProduct || !quantity || parseFloat(quantity) < 0 || isSaving}
-                  className="px-10 py-3.5 bg-red-500 text-white rounded-lg text-xl font-bold hover:bg-red-600 disabled:opacity-40 transition-colors"
+                  className="w-[100px] py-3.5 bg-red-500 text-white rounded-lg text-xl font-bold hover:bg-red-600 disabled:opacity-40 transition-colors"
                 >        
                   차감
                 </button>
@@ -712,7 +712,7 @@ export function InventoryPage() {
               <button
                 onClick={handleSave}
                 disabled={!currentProduct || !quantity || parseFloat(quantity) < 0 || isSaving}
-                className="px-10 py-5 bg-primary text-primary-foreground rounded-lg text-xl font-bold hover:opacity-90 disabled:opacity-40"
+                className="w-[100px] py-5 bg-primary text-primary-foreground rounded-lg text-xl font-bold hover:opacity-90 disabled:opacity-40"
               >
                 {isSaving ? "저장 중..." : "저장"}
               </button>
