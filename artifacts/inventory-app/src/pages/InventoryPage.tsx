@@ -658,7 +658,7 @@ export function InventoryPage() {
                       {currentProduct.code}
                     </span>
                       
-                      <p className="text-xs text-muted-foreground font-mono">
+                      <p className="text-[10px] text-muted-foreground font-mono">
                         {currentProduct.barcode}
                       </p>
 
