@@ -648,7 +648,7 @@ export function InventoryPage() {
            <div className="bg-muted/30 border border-border  rounded-xl p-2 mt-[10px]">
 
             <div className="flex gap-3 items-end justify-between">
-              <div className="flex-1 ">
+              <div className="flex-1 min-w-0">
                 
                 {currentProduct ? (
                   <>
@@ -658,7 +658,7 @@ export function InventoryPage() {
                       {currentProduct.code}
                     </span>
                       
-                      <p className="text-[10px] text-muted-foreground font-mono">
+                      <p className="text-[10px] text-muted-foreground font-mono truncate flex-1 min-w-0">
                         {currentProduct.barcode}
                       </p>
 
