@@ -653,19 +653,19 @@ export function InventoryPage() {
                 {currentProduct ? (
                   <>
                     
-                    <div className="flex-1 flex gap-1 items-center">
+
                     <span className="text-[15px] font-medium bg-primary/10 text-primary px-1 py-0.5 rounded-sm ml-[5px]">
                       {currentProduct.code}
                     </span>
-                      
-                      <p className="text-[10px] text-muted-foreground font-mono truncate flex-1 min-w-0">
+                      <h3 className="text-[25px] font-bold text-foreground mt-1 ml-[5px]">
+                        {currentProduct.name}
+                      </h3>
+                    <p className="text-[15px] text-muted-foreground font-mono0 ml-[8px]">
                         {currentProduct.barcode}
-                      </p>
+                    </p>
 
-                      </div>
-                    <h3 className="text-[25px] font-bold text-foreground mt-1 ml-[5px]">
-                      {currentProduct.name}
-                    </h3>
+                      
+                    
                     
                   </>
                 ) : (
