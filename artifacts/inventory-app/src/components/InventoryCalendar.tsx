@@ -98,9 +98,36 @@ export function InventoryCalendar({
 
   const todayKey = toDateKey(today);
 
-  const selectedRecords = selectedKey
+  // --- 이 구역을 찾아서 아래 코드로 교체해 주세요 ---
+
+  // 1. 선택된 날짜의 "원본 개별 로그 리스트"를 가져옵니다.
+  const rawSelectedRecords = selectedKey
     ? (recordsByDate.get(selectedKey) ?? [])
     : [];
+
+  // 2. 🔥 [핵심 수정] 동일 상품(바코드) 기준 수량 합산 처리
+  const selectedRecords = useMemo(() => {
+    const groupMap = new Map<string, InventoryRecord>();
+
+    for (const r of rawSelectedRecords) {
+      if (groupMap.has(r.barcode)) {
+        // 이미 맵에 등록된 상품이라면 수량만 더해줍니다.
+        const existing = groupMap.get(r.barcode)!;
+        existing.quantity += r.quantity;
+
+        // 시간 정보는 가장 마지막에 찍힌 시간으로 계속 업데이트해 줍니다.
+        if (r.time) existing.time = r.time;
+      } else {
+        // 처음 등장한 상품이라면 복사본을 만들어 맵에 새로 등록합니다.
+        groupMap.set(r.barcode, { ...r });
+      }
+    }
+
+    // 합산이 완료된 이쁜 리스트 배열을 반환합니다.
+    return Array.from(groupMap.values());
+  }, [rawSelectedRecords]);
+
+  // 3. 우측 상단 요약용 전체 총수량 (합산된 리스트 기준으로 계산)
   const selectedTotal = selectedRecords.reduce((s, r) => s + r.quantity, 0);
 
   function formatSelectedLabel() {
@@ -117,6 +144,8 @@ export function InventoryCalendar({
     }
     return count;
   }, [recordsByDate, viewYear, viewMonth]);
+
+  // --- 여기 아래부터는 기존 return (...) 문이 시작됩니다 ---
 
   return (
     <div className="bg-card rounded-xl border border-card-border shadow-sm overflow-hidden">
@@ -189,9 +218,11 @@ export function InventoryCalendar({
                   `}
                 >
                   <span>{dayNum}</span>
+                  {/* --- 기존 코드를 찾아서 아래 블록으로 교체해 주세요 --- */}
                   {hasRecords && (
-                    <div className="flex gap-0.5 mt-0.5">
+                    <div className="flex gap-0.5 mt-0.5 items-center justify-center">
                       {dayRecords!.length <= 3 ? (
+                        // 1. 기록이 3건 이하일 때는 기존처럼 이쁘게 점(Dot)으로 표시합니다.
                         dayRecords!.map((_, i) => (
                           <span
                             key={i}
@@ -199,16 +230,24 @@ export function InventoryCalendar({
                           />
                         ))
                       ) : (
-                        <>
-                          <span
-                            className={`w-1 h-1 rounded-full ${isSelected ? "bg-primary-foreground/70" : "bg-primary"}`}
-                          />
-                          <span
-                            className={`text-[9px] font-bold leading-none ${isSelected ? "text-primary-foreground/80" : "text-primary"}`}
-                          >
-                            {dayRecords!.length}
-                          </span>
-                        </>
+                        // 2. 🔥 [핵심 수정] 기록이 4건 이상일 때 중복 바코드를 제거한 '진짜 상품 종류 수'를 구합니다.
+                        (() => {
+                          // Set을 이용해 똑같은 바코드는 하나로 뭉뚱그려 유일한 값만 남깁니다.
+                          const uniqueProductsCount = new Set(dayRecords!.map((r) => r.barcode)).size;
+
+                          return (
+                            <>
+                              <span
+                                className={`w-1 h-1 rounded-full ${isSelected ? "bg-primary-foreground/70" : "bg-primary"}`}
+                              />
+                              <span
+                                className={`text-[9px] font-bold leading-none ${isSelected ? "text-primary-foreground/80" : "text-primary"}`}
+                              >
+                                {uniqueProductsCount} {/* 👈 이제 '건수'가 아니라 합산된 '품목 수'가 보입니다 */}
+                              </span>
+                            </>
+                          );
+                        })()
                       )}
                     </div>
                   )}

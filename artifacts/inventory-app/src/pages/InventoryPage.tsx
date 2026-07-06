@@ -45,6 +45,8 @@ export function InventoryPage() {
   const [showScanner, setShowScanner] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showProductManager, setShowProductManager] = useState(false);
+  const [showLogModal, setShowLogModal] = useState(false); // 팝업창 열림 여부
+  const [targetLogs, setTargetLogs] = useState<any[]>([]); // 팝업창에 보여줄 로그들
   const [searchState, setSearchState] = useState<"idle" | "found" | "notfound">(
     "idle",
   );
@@ -268,131 +270,156 @@ export function InventoryPage() {
     setShowScanner(false);
     handleSearch(barcode);
   }
+
+
+  
   //handleMinusSave 수정기능
+  // [개조된 2단계 handleMinusSave 함수]
   async function handleMinusSave() {
     if (!currentProduct || isSaving) return;
 
     const qty = parseFloat(quantity);
-    if (isNaN(qty) || qty <= 0) return;
 
-    // ---------------- [확인창 추가] ----------------
-    // 취소를 누르면 함수를 여기서 종료하여 저장을 막습니다.
-    if (!confirm(`[차감 알림]\n${currentProduct.name} 제품을 ${qty}개 차감하시겠습니까?`)) {
-      return; 
-    }
-    // ---------------------------------------------
-
-    setIsSaving(true);
-
-    try {
-      const now = new Date();
-      const dateKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    // 💡 [핵심] 수량이 0일 때만 작동하도록 락을 겁니다.
+    if (qty === 0) {
       const todayStr = new Date().toLocaleDateString("ko-KR");
 
-      const dailyRecordsRef = ref(db, `inventory_records/${dateKey}`);
-
-      const existingRecord = records.find(
-        (r) => r.barcode === currentProduct.barcode && r.date === todayStr,
+      // 현재 들고 있는 전체 records 중에서 '오늘 날짜 + 이 바코드'를 가진 개별 로그들만 쏙 필터링합니다.
+      const productLogs = allRecords.filter(
+        (r) => r.barcode === currentProduct.barcode && r.date === todayStr
       );
 
-      const finalQty = -qty;
-
-      if (existingRecord && existingRecord.id) {
-        const recordRef = ref(db, `inventory_records/${dateKey}/${existingRecord.id}`);
-        await update(recordRef, {
-          quantity: existingRecord.quantity + finalQty,
-          timestamp: serverTimestamp(),
-          time: new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
-        });
-      } else {
-        const newRecord = {
-          barcode: currentProduct.barcode,
-          code: currentProduct.code,
-          name: currentProduct.name,
-          quantity: finalQty,
-          timestamp: serverTimestamp(),
-          date: todayStr,
-          time: new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
-        };
-        await push(dailyRecordsRef, newRecord);
+      if (productLogs.length === 0) {
+        alert("오늘 입력된 이 상품의 저장 기록(로그)이 없습니다.");
+        return;
       }
 
-      setLastSaved(`${currentProduct.name} (${qty}개 차감)`);
-      setBarcodeInput("");
-      setCurrentProduct(null);
-      setQuantity("");
-      setSearchState("idle");
-
-      setTimeout(() => setLastSaved(null), 3000);
-      setTimeout(() => {
-        document.getElementById("barcode-input")?.focus();
-      }, 100);
-    } catch (error) {
-      console.error("차감 저장 에러:", error);
-      alert("데이터 처리에 실패했습니다.");
-    } finally {
-      setIsSaving(false);
+      // 파이어베이스에서 찾은 로그들을 상태값에 담고 팝업창을 엽니다.
+      setTargetLogs(productLogs);
+      setShowLogModal(true); 
+      return; // 파이어베이스에 마이너스 데이터를 넣지 않고 여기서 종료합니다!
     }
+
+    // 만약 0이 아닌 다른 수량을 입력하고 차감을 누르면 작동하지 않도록 방어합니다.
+    alert("수량에 '0'을 입력한 상태에서 [차감] 버튼을 누르면 과거 기록 취소 창이 뜹니다.");
   }
 
 
   
+  // [3단계 신규 함수] 파이어베이스에서 특정 로그를 삭제합니다.
+  async function handleDeleteLog(logId: string) {
+    if (!currentProduct) return;
+
+    // 작업자 실수 방지를 위해 한 번 더 물어봅니다.
+    const confirmDelete = window.confirm("선택한 입력 기록을 정말 취소(삭제)하시겠습니까?");
+    if (!confirmDelete) return;
+
+    try {
+      const now = new Date();
+      const dateKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+      // 1. 파이어베이스 내의 정확한 데이터 위치(경로)를 잡습니다.
+      // 경로 예시: inventory_records/2026-07-06/-Oa1b2c3...
+      const logRef = ref(db, `inventory_records/${dateKey}/${logId}`);
+
+      // 2. 파이어베이스에서 해당 데이터 한 줄을 완전히 삭제합니다.
+      await remove(logRef);
+      alert("기록이 성공적으로 취소되었습니다.");
+
+      // 3. [화면 업데이트] 현재 팝업창에 보여지고 있는 리스트(targetLogs)에서도 지운 항목을 빼줍니다.
+      setTargetLogs((prevLogs) => prevLogs.filter((log) => log.id !== logId));
+
+      // 4. 만약 더 이상 지울 로그가 없다면 팝업창을 자동으로 닫아줍니다.
+      if (targetLogs.length <= 1) {
+        setShowLogModal(false);
+        // 입력창 초기화 및 포커스 이동
+        setBarcodeInput("");
+        setCurrentProduct(null);
+        setQuantity("");
+        setTimeout(() => document.getElementById("barcode-input")?.focus(), 100);
+      }
+
+    } catch (error) {
+      console.error("로그 삭제 에러:", error);
+      alert("기록 삭제에 실패했습니다. 다시 시도해 주세요.");
+    }
+  }
+
+  // [신규 함수] 오늘 입력된 이 상품의 모든 로그를 한방에 삭제합니다.
+  async function handleDeleteAllLogs() {
+    if (!currentProduct || targetLogs.length === 0) return;
+
+    // ⚠️ 오작동 및 실수 방지를 위해 강력하게 경고 문구를 띄웁니다.
+    const confirmDelete = window.confirm(
+      `🚨 [위험] 오늘 입력된 [${currentProduct.name}]의 모든 기록(${targetLogs.length}건)을 전부 취소하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const now = new Date();
+      const dateKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+      // targetLogs에 들어있는 모든 개별 항목들을 파이어베이스에서 지웁니다.
+      // 여러 개를 한 번에 지울 때는 Promise.all을 쓰면 아주 빠르게 처리됩니다.
+      await Promise.all(
+        targetLogs.map((log) => {
+          const logRef = ref(db, `inventory_records/${dateKey}/${log.id}`);
+          return remove(logRef);
+        })
+      );
+
+      alert("해당 상품의 오늘 자 모든 기록이 완전히 취소되었습니다.");
+
+      // 성공 후 처리: 팝업창 상태 비우기 및 닫기
+      setTargetLogs([]);
+      setShowLogModal(false);
+
+      // 입력창 초기화 및 바코드 포커스 이동
+      setBarcodeInput("");
+      setCurrentProduct(null);
+      setQuantity("");
+      setTimeout(() => document.getElementById("barcode-input")?.focus(), 100);
+
+    } catch (error) {
+      console.error("전체 로그 삭제 에러:", error);
+      alert("전체 삭제 처리에 실패했습니다. 다시 시도해 주세요.");
+    }
+  }
+  
+  
   //handsave 저장기능
+  // [수정할 1단계 코드]: 무조건 개별 로그로 파이어베이스에 쌓이게 하는 handleSave
   async function handleSave() {
     if (!currentProduct || isSaving) return;
 
     const qty = parseFloat(quantity);
-    if (isNaN(qty) || qty <= 0) return;
+    if (isNaN(qty) || qty <= 0) return; // 0 처리는 다음 단계에서 진행하므로 우선 기존 방어코드 유지
 
     setIsSaving(true);
 
     try {
-      // 1. 오늘 날짜 문자열 생성 (저장 형식과 일치하도록
       const now = new Date();
       const dateKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
       const todayStr = new Date().toLocaleDateString("ko-KR");
 
       const dailyRecordsRef = ref(db, `inventory_records/${dateKey}`);
 
-      // 2. [수정] 바코드뿐만 아니라 '오늘 날짜'까지 일치하는 기록이 있는지 확인
-      const existingRecord = records.find(
-        (r) => r.barcode === currentProduct.barcode && r.date === todayStr,
-      );
+      // 무조건 새로운 로그(데이터 한 줄)로 저장되도록 push만 사용합니다!
+      const newRecord = {
+        barcode: currentProduct.barcode,
+        code: currentProduct.code,
+        name: currentProduct.name,
+        quantity: qty,
+        timestamp: serverTimestamp(),
+        date: todayStr, 
+        time: new Date().toLocaleTimeString("ko-KR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      };
 
-      if (existingRecord && existingRecord.id) {
-        // [업데이트] 오늘 이미 입력한 내역이 있는 경우에만 수량 합산
-        const recordRef = ref(
-          db,
-          `inventory_records/${dateKey}/${existingRecord.id}`,
-        );
-
-        await update(recordRef, {
-          quantity: existingRecord.quantity + qty,
-          timestamp: serverTimestamp(),
-          time: new Date().toLocaleTimeString("ko-KR", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        });
-        console.log("오늘 작업분 수량 합산 완료");
-      } else {
-        // [신규 저장] 오늘 처음 입력하는 바코드이거나 과거 데이터만 있는 경우 새로 생성
-
-        const newRecord = {
-          barcode: currentProduct.barcode,
-          code: currentProduct.code,
-          name: currentProduct.name,
-          quantity: qty,
-          timestamp: serverTimestamp(),
-          date: todayStr, // 오늘 날짜 명시
-          time: new Date().toLocaleTimeString("ko-KR", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        };
-        await push(dailyRecordsRef, newRecord);
-        console.log("새로운 항목 저장 완료");
-      }
+      await push(dailyRecordsRef, newRecord);
+      console.log("새로운 로그 기록 저장 완료");
 
       // 입력창 초기화 및 포커스 이동
       setLastSaved(`${currentProduct.name} (${qty}개 저장)`);
@@ -412,6 +439,11 @@ export function InventoryPage() {
       setIsSaving(false);
     }
   }
+
+
+
+
+  
   const isCalendarView = viewMode === "calendar";
 
   // 오늘 날짜 문자열 포맷 생성 (ko-KR 형식)
@@ -501,6 +533,7 @@ export function InventoryPage() {
               닫기
             </button>
           </div>
+          
         </div>
       )}
 
@@ -838,6 +871,93 @@ export function InventoryPage() {
           <InventoryCalendar records={allRecords} onDelete={deleteRecord} />
         )}
       </main>
-    </div>
+
+      
+    {/* 1. 조건문: 0 입력 후 차감 버튼을 눌러서 showLogModal이 true가 되었고, 상품이 선택되어 있을 때만 팝업을 엽니다 */}
+    {showLogModal && currentProduct && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+        {/* 모달 창 본체 */}
+        <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-5 border border-gray-200">
+
+          {/* 팝업 헤더 */}
+          <div className="flex items-center justify-between mb-4 border-b pb-3">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">과거 입력 내역 취소 (차감)</h2>
+              <p className="text-xs text-gray-500 mt-0.5">
+                취소할 기록의 버튼을 누르거나 전체 삭제를 할 수 있습니다.
+              </p>
+            </div>
+
+            {/* 🔥 우측 상단 버튼 모음 구역 */}
+            <div className="flex items-center gap-3">
+              {/* 🚨 전체 삭제 버튼 추가 */}
+              {targetLogs.length > 1 && ( // 지울 로그가 최소 2개 이상일 때만 화면에 노출시킵니다.
+                <button
+                  onClick={handleDeleteAllLogs}
+                  className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded-md text-xs font-bold transition-all shadow-sm"
+                >
+                  전체 삭제
+                </button>
+              )}
+
+              {/* 닫기 X 버튼 */}
+              <button 
+                onClick={() => setShowLogModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl font-bold p-1 leading-none"
+              >
+                &times;
+              </button>
+            </div>
+          </div>
+
+          {/* 현재 선택된 상품 정보 상자 */}
+          <div className="bg-gray-50 rounded-lg p-3 mb-4 text-left border border-gray-100">
+            <p className="text-sm font-semibold text-gray-800">{currentProduct.name}</p>
+            <p className="text-xs text-gray-400 font-mono mt-1">
+              코드: {currentProduct.code} | 바코드: {currentProduct.barcode}
+            </p>
+          </div>
+
+          {/* 2. 로그 리스트 영역 (스크롤 가능) */}
+          <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+            {/* targetLogs에 쌓인 개별 기록들을 하나씩 꺼내서 반복 수확(map)합니다 */}
+            {targetLogs.map((log) => (
+              <div 
+                key={log.id} 
+                className="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-white shadow-sm"
+              >
+                <div className="text-left">
+                  {/* 몇 시 몇 분에 입력했는지 표시 */}
+                  <span className="text-xs font-mono text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                    {log.time || "시간 미정"}
+                  </span>
+                  <p className="text-sm font-bold text-gray-800 mt-1">
+                    입력된 수량: <span className="text-blue-600 font-extrabold">{log.quantity}</span> 개
+                  </p>
+                </div>
+
+                {/* 🛑 삭제 버튼 (3단계에서 실제 파이어베이스 삭제 코드를 여기에 연결합니다) */}
+                {/* 🔥 3단계 최종 완성본 버튼 */}
+                <button
+                  onClick={() => handleDeleteLog(log.id)} // 👈 log.id를 들고 삭제 함수로 달려갑니다!
+                  className="px-3 py-2 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white rounded-lg text-xs font-semibold border border-red-200 transition-all cursor-pointer"
+                >
+                  기록 삭제
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* 팝업 하단 닫기 버튼 */}
+          <button
+            onClick={() => setShowLogModal(false)}
+            className="mt-4 w-full py-2.5 rounded-xl border border-gray-300 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            창 닫기
+          </button>
+
+        </div>
+      </div>
+    )}</div>
   );
 }

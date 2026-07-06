@@ -247,7 +247,7 @@ export function InventoryTable({
               <th className="w-23 px-2 py-3 font-semibold text-gray-600 text-center">
                 수량 / 전산
               </th>
-              <th className="w-10 px-2 py-3" />
+              <th className="w-3 px-1 py-1" />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -293,17 +293,7 @@ export function InventoryTable({
                     </span>
                   </div>
                 </td>
-                <td className="px-1 py-2 text-center">
-                  {item.isScanned && !isLocked && (
-                    <button
-                      onClick={() => onDelete(item.id)}
-                      className="p-2 text-gray-300 hover:text-red-500 rounded-lg"
-                    >
-                      <Trash2 className="w-7 h-6" />
-                    </button>
-                  )}
-                </td>
-              </tr>
+                </tr>
             ))}
           </tbody>
         </table>
