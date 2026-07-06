@@ -278,7 +278,7 @@ export function InventoryPage() {
     handleSearch(barcode);
   }
 
-  //handleMinusSave 차감기능
+  //handleMinusSave 삭제기능
   async function handleMinusSave() {
     if (!currentProduct || isSaving) return;
 
@@ -366,7 +366,7 @@ export function InventoryPage() {
         })
       );
 
-      alert("해당 상품의 오늘 자 모든 기록이 완전히 취소되었습니다.");
+      alert("해당 상품의 오늘 자 모든 기록이 완전히 삭제되었습니다.");
 
       // 성공 후 처리: 팝업창 상태 비우기 및 닫기
       setTargetLogs([]);
@@ -599,13 +599,13 @@ export function InventoryPage() {
       
           <div className="flex gap-3">
             <div className="flex flex-col">
-              <div className="flex-1 relative ">
+              <div className=" flex-1 relative ">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
                   id="barcode-input"
                   type="text"
                   disabled={isCalendarView || isLocked} // isLocked 추가!
-                  className={`w-full pl-8 pr-1 py-2.5 border border-input rounded-lg text-sm mt-[5px] mb-[5px] ${
+                  className={`w-full pl-8 pr-1 py-3.5 border border-input rounded-lg text-[13px] mt-[5px] mb-[5px] ${
                     isCalendarView || isLocked
                       ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60"
                       : "bg-background focus:outline-none focus:ring-2 focus:ring-ring"
@@ -624,7 +624,7 @@ export function InventoryPage() {
                   id="product-name-input"
                   type="text"
                   disabled={isCalendarView || isLocked}
-                  className={`w-full pl-8 pr-1 py-2.5 border border-input rounded-lg text-sm mt-[5px] mb-[5px] ${
+                  className={`w-full pl-8 pr-1 py-3.5 border border-input rounded-lg text-[13px] mt-[5px] mb-[5px] ${
                     isCalendarView || isLocked
                       ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60"
                       : "bg-background focus:outline-none focus:ring-2 focus:ring-ring"
@@ -715,7 +715,7 @@ export function InventoryPage() {
                   </>
                 ) : (
                   <div className="py-2 text-sm text-muted-foreground text-left font-semibold mt-[0px] mb-[15px] ml-[10px]">
-                    스캔 또는 상품 검색해 주세요.
+                    스캔 & 상품 검색해 주세요.
                   </div>
                 )}
               </div>
@@ -729,7 +729,7 @@ export function InventoryPage() {
                   disabled={!currentProduct || !quantity || parseFloat(quantity) < 0 || isSaving}
                   className="w-[100px] py-3.5 bg-red-500 text-white rounded-lg text-xl font-bold hover:bg-red-600 disabled:opacity-40 transition-colors"
                 >        
-                  차감
+                  삭제
                 </button>
               </div>
             </div>
@@ -891,7 +891,7 @@ export function InventoryPage() {
             <div>
               <h2 className="text-lg font-bold text-gray-900">재고 입력 내역</h2>
               <p className="text-xs text-gray-500 mt-0.5">
-                기록삭제 또는 전체 삭제를 할 수 있습니다.
+                기록삭제 또는 전체삭제를 할 수 있습니다.
               </p>
             </div>
             <div className="flex items-center gap-3">

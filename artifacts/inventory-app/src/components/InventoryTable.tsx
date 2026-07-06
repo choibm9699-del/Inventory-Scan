@@ -144,17 +144,17 @@ export function InventoryTable({
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       {/* 헤더 영역 - UI 유지 */}
-      <div className="flex items-center justify-between px-2 py-3.5 border-b border-gray-300 bg-gray-100">
+      <div className="flex items-center justify-between px-2 py-3 border-b border-gray-300 bg-gray-100">
         <div className="flex flex-col">
-          <h1 className="text-xl font-semibold px-1 text-gray-800">
+          <h1 className="text-xl font-semibold px-1 text-gray-800 ml-1">
             재고 기록
           </h1>
-          <div>
-            <span className="text-xs bg-gray-100 px-1 text-gray-600 rounded-full font-bold">
+          <div className="flex flex-col text-left">
+            <span className="text-[11px] bg-gray-100 px-1 text-blue-500 rounded-full font-bold ml-1 ">
               {displayList.length}개 품목
             </span>
-            <span className="text-xs text-gray-500 font-medium">
-              (합계: {totalScannedSum.toLocaleString()}개)
+            <span className="text-[10px] text-gray-500 font-medium ml-2">
+              합계: {totalScannedSum.toLocaleString()}개
             </span>
           </div>
         </div>
@@ -172,7 +172,7 @@ export function InventoryTable({
                       : "chosung",
               )
             }
-            className="flex items-center gap-1.5 px-2 py-3 w-24 bg-white border border-gray-300 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-50 active:bg-gray-100 transition-colors"
+            className="flex items-center gap-1.5 px-2 py-4 w-24 bg-white border border-gray-300 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-50 active:bg-gray-100 transition-colors"
           >
             <ArrowUpDown className="w-3.5 h-3.5 text-blue-500" />
             {sortOrder === "desc"
@@ -180,14 +180,14 @@ export function InventoryTable({
               : sortOrder === "asc"
                 ? "수량 낮은순"
                 : sortOrder === "chosung"
-                  ? "상 품 명순"
+                  ? "상품명 순"
                   : "상품코드순"}
           </button>
 
           {displayList.length > 0 && (
             <button
               onClick={() => setShowOnlyDiff(!showOnlyDiff)}
-              className={`flex items-center gap-1.5 px-3 py-3 border rounded-lg text-xs font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-4 border rounded-lg text-xs font-bold transition-all ${
                 showOnlyDiff
                   ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
                   : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
@@ -204,7 +204,7 @@ export function InventoryTable({
         </div>
       </div>
       {/* 버튼 액션바 - UI 유지 */}
-      <div className="px-5 py-1 border-t border-gray-100 flex items-center justify-between bg-gray-50/30 min-h-[64px]">
+      <div className="px-3 py-1 border-t border-gray-100 flex items-center justify-between bg-gray-50/30 min-h-[64px]">
        
 
         <div className="flex-1 flex justify-end items-center gap-2">
@@ -256,7 +256,7 @@ export function InventoryTable({
                 key={item.id}
                 className="hover:bg-gray-50/50 transition-colors"
               >
-                <td className="px-2 py-4 text-center">
+                <td className="px-2 py-3 text-center">
                   <div
                     className={`text-[20px] font-bold leading-tight ${item.isScanned ? "text-gray-900" : "text-gray-300"}`}
                   >
@@ -270,10 +270,10 @@ export function InventoryTable({
                     </span>
                   </div>
                 </td>
-                <td className="px-2 py-4 text-center tabular-nums">
+                <td className="px-2 py-3 text-center tabular-nums">
                   <div className="flex flex-col items-center justify-center">
                     <span
-                      className={`text-[23px] font-black leading-none ${item.isScanned ? "text-black" : "text-gray-200"}`}
+                      className={`text-[24px] font-black leading-none ${item.isScanned ? "text-black" : "text-gray-200"}`}
                     >
                       {item.scannedQty.toLocaleString()}
                     </span>
