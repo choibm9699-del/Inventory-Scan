@@ -1,14 +1,6 @@
 import { useState, useRef, KeyboardEvent } from "react";
-import {
-  Barcode,
-  Camera,
-  Search,
-  Package,
-  CheckCircle,
-  AlertCircle,
-  List,
-  CalendarDays,
-} from "lucide-react";
+import {Barcode, Camera, Search, Package, CheckCircle, AlertCircle,
+  List, CalendarDays, } from "lucide-react";
 import { useEffect } from "react";
 import * as XLSX from "xlsx";
 import { BarcodeScanner } from "../components/BarcodeScanner";
@@ -21,16 +13,8 @@ import { useInventory } from "../hooks/useInventory";
 import { exportToExcel, processInventoryExcel } from "../lib/excel";
 import type { Product } from "../types";
 import { db } from "../firebase.ts"; // 아까 만든 설정 파일
-import {
-  ref,
-  push,
-  get,
-  remove,
-  serverTimestamp,
-  update,
-  set,
-  onValue,
-} from "firebase/database";
+import {ref, push, get, remove, serverTimestamp, update, set,
+        onValue,} from "firebase/database";
 
 type ViewMode = "list" | "calendar";
 
@@ -100,7 +84,7 @@ export function InventoryPage() {
     .replace(/\s+/g, "-")
     .replace(/년|월|일/g, "");
 
-  // 재고업로드
+  // WMS 재고 등록기능
   async function handleImport(file: File) {
     try {
       // 1. 엑셀 먼저 분석 (파일이 잘못되었으면 여기서 바로 catch로 이동)
@@ -173,7 +157,8 @@ export function InventoryPage() {
       );
     }
   }
-  // 검색기능
+  
+  //바코드&상품코드 검색기능
   function handleSearch(barcode?: string) {
     const code = (barcode ?? barcodeInput).trim();
     const isBarcode = code.length > 5; // 6자리 이상 → 바코드, 5자리 이하 → 상품코드
@@ -200,7 +185,8 @@ export function InventoryPage() {
       setShowCandidateModal(true);
     }
   }
-  //상품명 검색
+  
+  //상품명 검색기능
   const handleProductNameSearch = () => {
     if (!productNameInput.trim()) return;
 
@@ -255,15 +241,36 @@ export function InventoryPage() {
       alert("해제 중 오류가 발생했습니다.");
     }
   };
-
+  
+  // 엔터키로 검색기능
   function handleBarcodeKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") handleSearch();
   }
+  
+  // 엔터키로 저장기능
+  function handleQuantityKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      e.preventDefault(); // 엔터 기본 동작 방지
 
-  function handleQuantityKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") handleSave();
+      const qty = parseFloat(quantity);
+
+      // 🔥 [추가] 엔터 쳤을 때도 1만 개 이상인지 똑같이 검사
+      if (!isNaN(qty) && qty >= 10000) {
+        const isBigQtyConfirmed = window.confirm(
+          `🚨 [대량 수량 경고]\n입력하신 수량이 [ ${qty.toLocaleString()} 개 ] 입니다.\n1만 개 이상이 맞습니까?`
+        );
+        if (!isBigQtyConfirmed) {
+          quantityRef.current?.focus();
+          return; // 취소 누르면 저장 안 함
+        }
+      }
+
+      // 검사를 통과했거나 정상 수량일 때만 기존처럼 저장 함수 실행
+      handleSave();
+    }
   }
-
+  
+  // 스캔기능
   function handleScanDetected(barcode: string) {
     setBarcodeInput(barcode);
     setProductNameInput("");
@@ -271,16 +278,11 @@ export function InventoryPage() {
     handleSearch(barcode);
   }
 
-
-  
-  //handleMinusSave 수정기능
-  // [개조된 2단계 handleMinusSave 함수]
+  //handleMinusSave 차감기능
   async function handleMinusSave() {
     if (!currentProduct || isSaving) return;
 
     const qty = parseFloat(quantity);
-
-    // 💡 [핵심] 수량이 0일 때만 작동하도록 락을 겁니다.
     if (qty === 0) {
       const todayStr = new Date().toLocaleDateString("ko-KR");
 
@@ -290,28 +292,25 @@ export function InventoryPage() {
       );
 
       if (productLogs.length === 0) {
-        alert("오늘 입력된 이 상품의 저장 기록(로그)이 없습니다.");
+        alert("제품의 저장 기록이 없습니다.");
         return;
       }
 
       // 파이어베이스에서 찾은 로그들을 상태값에 담고 팝업창을 엽니다.
-      setTargetLogs(productLogs);
+      setTargetLogs(productLogs.reverse());
       setShowLogModal(true); 
       return; // 파이어베이스에 마이너스 데이터를 넣지 않고 여기서 종료합니다!
     }
 
     // 만약 0이 아닌 다른 수량을 입력하고 차감을 누르면 작동하지 않도록 방어합니다.
-    alert("수량에 '0'을 입력한 상태에서 [차감] 버튼을 누르면 과거 기록 취소 창이 뜹니다.");
+    alert("재고 수량에 '0'을 입력한 뒤 [차감] 버튼을 눌러주세요.");
   }
-
-
   
-  // [3단계 신규 함수] 파이어베이스에서 특정 로그를 삭제합니다.
+  // 파이어베이스에서 특정 로그를 삭제합니다.
   async function handleDeleteLog(logId: string) {
     if (!currentProduct) return;
 
-    // 작업자 실수 방지를 위해 한 번 더 물어봅니다.
-    const confirmDelete = window.confirm("선택한 입력 기록을 정말 취소(삭제)하시겠습니까?");
+    const confirmDelete = window.confirm("선택한 기록을 정말 삭제 하시겠습니까?");
     if (!confirmDelete) return;
 
     try {
@@ -324,7 +323,7 @@ export function InventoryPage() {
 
       // 2. 파이어베이스에서 해당 데이터 한 줄을 완전히 삭제합니다.
       await remove(logRef);
-      alert("기록이 성공적으로 취소되었습니다.");
+      alert("성공적으로 삭제되었습니다.");
 
       // 3. [화면 업데이트] 현재 팝업창에 보여지고 있는 리스트(targetLogs)에서도 지운 항목을 빼줍니다.
       setTargetLogs((prevLogs) => prevLogs.filter((log) => log.id !== logId));
@@ -345,13 +344,12 @@ export function InventoryPage() {
     }
   }
 
-  // [신규 함수] 오늘 입력된 이 상품의 모든 로그를 한방에 삭제합니다.
+  // 오늘 입력된 이 상품의 모든 로그를 한방에 삭제합니다.
   async function handleDeleteAllLogs() {
     if (!currentProduct || targetLogs.length === 0) return;
 
-    // ⚠️ 오작동 및 실수 방지를 위해 강력하게 경고 문구를 띄웁니다.
     const confirmDelete = window.confirm(
-      `🚨 [위험] 오늘 입력된 [${currentProduct.name}]의 모든 기록(${targetLogs.length}건)을 전부 취소하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`
+      `🚨 [위험] 오늘 입력된 ${currentProduct.name}의 모든기록(${targetLogs.length}건)을 전부 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.!!`
     );
     if (!confirmDelete) return;
 
@@ -386,15 +384,22 @@ export function InventoryPage() {
     }
   }
   
-  
   //handsave 저장기능
-  // [수정할 1단계 코드]: 무조건 개별 로그로 파이어베이스에 쌓이게 하는 handleSave
   async function handleSave() {
     if (!currentProduct || isSaving) return;
 
     const qty = parseFloat(quantity);
     if (isNaN(qty) || qty <= 0) return; // 0 처리는 다음 단계에서 진행하므로 우선 기존 방어코드 유지
-
+    if (qty >= 10000) {
+      const isBigQtyConfirmed = window.confirm(
+        `🚨 [대량 수량 경고]\n입력하신 수량이 [ ${qty.toLocaleString()} 개 ] 입니다.\n1만 개 이상이 맞습니까?`
+      );
+      if (!isBigQtyConfirmed) {
+        // '취소'를 누르면 저장하지 않고 수량 입력창에 포커스를 다시 줍니다.
+        quantityRef.current?.focus();
+        return; 
+      }
+    }
     setIsSaving(true);
 
     try {
@@ -458,6 +463,7 @@ export function InventoryPage() {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
+      {/* 비밀번호 모달 */}
       {showPasswordModal && (
         <PasswordModal
           onSuccess={() => {
@@ -478,7 +484,7 @@ export function InventoryPage() {
           }}
         />
       )}
-
+      {/* 제품검색 모달 */}
       {showCandidateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
           <div className="bg-card rounded-lg shadow-xl w-full max-w-sm p-5">
@@ -536,7 +542,7 @@ export function InventoryPage() {
           
         </div>
       )}
-
+      {/* 상품 관리 모달 */} 
       {showProductManager && (
         <ProductManager
           products={products}
@@ -547,7 +553,7 @@ export function InventoryPage() {
           onClose={() => setShowProductManager(false)}
         />
       )}
-
+      {/* 헤더 */}
       <header className="bg-sidebar text-sidebar-foreground shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between w-full">
           <div className="flex items-center gap-1">
@@ -574,7 +580,8 @@ export function InventoryPage() {
           </button>
         </div>
       </header>
-
+      
+      {/* 메인 콘텐츠 */}
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-5 w-full overflow-x-hidden">
         {showScanner && (
           <BarcodeScanner
@@ -582,12 +589,14 @@ export function InventoryPage() {
             onClose={() => setShowScanner(false)}
           />
         )}
+        
+        {/* 검색 섹션 */}
         <div className="bg-card border border-card-border rounded-xl shadow-sm p-4">
           <h2 className="font-semibold text-sm text-muted-foreground mb-4 flex items-center gap-2">
             <Barcode className="w-4 h-4" />
             상품코드 or 상품명 입력 / 바코드 스캔
           </h2>
-
+      
           <div className="flex gap-3">
             <div className="flex flex-col">
               <div className="flex-1 relative ">
@@ -677,7 +686,7 @@ export function InventoryPage() {
             </div>
           )}
 
-          {/* [수정] 상품 정보가 있을 때만 표시하고, 없을 때는 안내 문구만 표시 */}
+        {/*상품 정보 표시창 */}
            <div className="bg-muted/30 border border-border  rounded-xl p-2 mt-[10px]">
 
             <div className="flex gap-3 items-end justify-between">
@@ -711,8 +720,8 @@ export function InventoryPage() {
                 )}
               </div>
 
-              <div className="flex flex-col items-start justify-between gap-1 mb-1.5">
-                <span className="text-xs font-bold bg-muted text-foreground px-2 py-0.5 rounded-sm">
+              <div className="w-[100px] flex flex-col items-start justify-between gap-1 mb-1.5">
+                <span className="text-xs font-bold bg-muted text-foreground break-all leading-normal px-2 py-0.5 rounded-sm">
                   수량 : {currentProduct ? `${currentScannedQty}개` : "0개"}
                 </span>
                 <button
@@ -872,75 +881,62 @@ export function InventoryPage() {
         )}
       </main>
 
-      
-    {/* 1. 조건문: 0 입력 후 차감 버튼을 눌러서 showLogModal이 true가 되었고, 상품이 선택되어 있을 때만 팝업을 엽니다 */}
+      {/* 🚨 로그 삭제 팝업창 */}
     {showLogModal && currentProduct && (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
-        {/* 모달 창 본체 */}
         <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-5 border border-gray-200">
 
           {/* 팝업 헤더 */}
-          <div className="flex items-center justify-between mb-4 border-b pb-3">
+          <div className="flex items-center justify-between mb-1 border-b pb-3">
             <div>
-              <h2 className="text-lg font-bold text-gray-900">과거 입력 내역 취소 (차감)</h2>
+              <h2 className="text-lg font-bold text-gray-900">재고 입력 내역</h2>
               <p className="text-xs text-gray-500 mt-0.5">
-                취소할 기록의 버튼을 누르거나 전체 삭제를 할 수 있습니다.
+                기록삭제 또는 전체 삭제를 할 수 있습니다.
               </p>
             </div>
-
-            {/* 🔥 우측 상단 버튼 모음 구역 */}
             <div className="flex items-center gap-3">
               {/* 🚨 전체 삭제 버튼 추가 */}
-              {targetLogs.length > 1 && ( // 지울 로그가 최소 2개 이상일 때만 화면에 노출시킵니다.
+              {targetLogs.length > 1 && ( 
                 <button
                   onClick={handleDeleteAllLogs}
-                  className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded-md text-xs font-bold transition-all shadow-sm"
+                  className="px-2.5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-md text-[15px] font-bold transition-all shadow-sm"
                 >
                   전체 삭제
                 </button>
               )}
 
-              {/* 닫기 X 버튼 */}
-              <button 
-                onClick={() => setShowLogModal(false)}
-                className="text-gray-400 hover:text-gray-600 text-2xl font-bold p-1 leading-none"
-              >
-                &times;
-              </button>
             </div>
           </div>
 
           {/* 현재 선택된 상품 정보 상자 */}
           <div className="bg-gray-50 rounded-lg p-3 mb-4 text-left border border-gray-100">
-            <p className="text-sm font-semibold text-gray-800">{currentProduct.name}</p>
+            <p className="text-s font-semibold text-gray-800">{currentProduct.name}</p>
             <p className="text-xs text-gray-400 font-mono mt-1">
-              코드: {currentProduct.code} | 바코드: {currentProduct.barcode}
+              상품코드: {currentProduct.code} | 바코드: {currentProduct.barcode}
             </p>
           </div>
 
-          {/* 2. 로그 리스트 영역 (스크롤 가능) */}
+          {/* 로그 리스트 영역 (스크롤 가능) */}
           <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-            {/* targetLogs에 쌓인 개별 기록들을 하나씩 꺼내서 반복 수확(map)합니다 */}
             {targetLogs.map((log) => (
               <div 
                 key={log.id} 
-                className="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-white shadow-sm"
+                className="flex items-center justify-between p-2 rounded-lg border border-gray-200 bg-white shadow-sm"
               >
                 <div className="text-left">
                   {/* 몇 시 몇 분에 입력했는지 표시 */}
                   <span className="text-xs font-mono text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
                     {log.time || "시간 미정"}
                   </span>
-                  <p className="text-sm font-bold text-gray-800 mt-1">
+                  <p className="text-sm font-bold text-gray-800 mt-1 ml-1">
                     입력된 수량: <span className="text-blue-600 font-extrabold">{log.quantity}</span> 개
                   </p>
                 </div>
 
-                {/* 🛑 삭제 버튼 (3단계에서 실제 파이어베이스 삭제 코드를 여기에 연결합니다) */}
-                {/* 🔥 3단계 최종 완성본 버튼 */}
+                {/* 🛑 삭제 버튼 */}
                 <button
-                  onClick={() => handleDeleteLog(log.id)} // 👈 log.id를 들고 삭제 함수로 달려갑니다!
-                  className="px-3 py-2 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white rounded-lg text-xs font-semibold border border-red-200 transition-all cursor-pointer"
+                  onClick={() => handleDeleteLog(log.id)}
+                  className="px-5 py-3 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white rounded-lg text-[15px] font-semibold border border-red-200 transition-all cursor-pointer"
                 >
                   기록 삭제
                 </button>
@@ -951,7 +947,7 @@ export function InventoryPage() {
           {/* 팝업 하단 닫기 버튼 */}
           <button
             onClick={() => setShowLogModal(false)}
-            className="mt-4 w-full py-2.5 rounded-xl border border-gray-300 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+            className="mt-4 w-full py-2.5 rounded-xl border border-gray-300 text-s font-medium text-gray-600 hover:bg-gray-50 transition-colors"
           >
             창 닫기
           </button>

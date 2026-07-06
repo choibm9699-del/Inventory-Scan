@@ -332,12 +332,7 @@ export function InventoryCalendar({
                           {r.quantity.toLocaleString()}
                         </span>
                       </div>
-                      <button
-                        onClick={() => onDelete(r.id)}
-                        className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                     
                     </div>
                   </li>
                 ))}
