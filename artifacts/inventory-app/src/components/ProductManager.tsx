@@ -10,6 +10,7 @@ import {
   Download,
   AlertCircle,
   KeyRound,
+  Search, // <-- Search 아이콘 추가
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import type { Product } from "../types";
@@ -52,6 +53,10 @@ export function ProductManager({
   const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
   const [pwError, setPwError] = useState("");
   const [pwSuccess, setPwSuccess] = useState(false);
+
+  // <-- 검색어 상태 추가 -->
+  const [searchTerm, setSearchTerm] = useState("");
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleAdd() {
@@ -92,9 +97,6 @@ export function ProductManager({
   async function handleChangePw() {
     setPwError("");
 
-    // 주의: 여기서는 DB에 있는 현재 암호를 미리 알고 있어야 비교가 가능합니다.
-    // 만약 지금 당장 복잡하다면, 현재 비밀번호 체크 로직만 빼고 새 비밀번호로 덮어쓰게 할 수도 있습니다.
-
     if (pwForm.next.length < 4) {
       setPwError("새 비밀번호는 4자리 이상이어야 합니다.");
       return;
@@ -105,7 +107,6 @@ export function ProductManager({
     }
 
     try {
-      // 2. Firebase DB의 암호를 업데이트합니다.
       const updates = {};
       (updates as any)["/admin_settings/config/adminPassword"] = pwForm.next;
 
@@ -141,35 +142,26 @@ export function ProductManager({
       return;
     }
 
-    // 1. DB 데이터를 엑셀용 데이터로 변환 (한글 헤더 적용)
     const excelData = products.map((p) => ({
       바코드: p.barcode,
       상품코드: p.code,
       상품명: p.name,
     }));
 
-    // 2. 워크시트 생성
     const ws = XLSX.utils.json_to_sheet(excelData);
-
-    // 3. 열 너비 자동 조절 (보기 좋게)
     ws["!cols"] = [{ wch: 18 }, { wch: 15 }, { wch: 30 }];
 
-    // 4. 워크북 생성 및 저장
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "현재상품목록");
 
-    // 파일명에 오늘 날짜를 넣어주면 관리하기 편합니다.
     const today = new Date().toISOString().split('T')[0];
     XLSX.writeFile(wb, `상품목록_${today}.xlsx`);
   }
 
-
-  
   function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 1. 사용자 확인 (기존 데이터 삭제 경고)
     if (!window.confirm("엑셀 업로드 시 기존 상품 목록이 모두 지워지고 새 목록으로 교체됩니다. 진행하시겠습니까?")) {
       e.target.value = "";
       return;
@@ -185,7 +177,7 @@ export function ProductManager({
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws);
 
-        const newProducts: Record<string, Product> = {}; // DB에 통째로 넣을 객체
+        const newProducts: Record<string, Product> = {};
         let added = 0;
         const errors: string[] = [];
 
@@ -195,13 +187,11 @@ export function ProductManager({
             const code = String(row["상품코드"] ?? row["code"] ?? "").trim();
             const name = String(row["상품명"] ?? row["name"] ?? "").trim();
 
-            // 상품명이 없으면 제외 (최소한 이름은 있어야 함)
             if (!name) {
               errors.push(`${rowNum}행: 상품명 누락으로 제외됨`);
               return;
             }
 
-            // 바코드가 있으면 바코드를 키로, 없으면 상품코드를 키로 사용
             const key = code || barcode;
 
             if (!key) {
@@ -213,8 +203,6 @@ export function ProductManager({
             added++;
           });
 
-        // 2. 핵심 변경 사항: update 대신 'set'을 사용하여 products 경로를 통째로 교체
-        // 'set'은 해당 경로의 이전 데이터를 싹 지우고 새로 들어온 데이터만 저장합니다.
         await set(dbRef(db, "products"), null);
 
         const entries = Object.entries(newProducts);
@@ -225,15 +213,11 @@ export function ProductManager({
           await update(dbRef(db, "products"), chunk);
           console.log(`완료: ${Math.min(i + CHUNK_SIZE, entries.length)} / ${entries.length}`);
 
-          // ↓ 이게 핵심! 100개 올릴 때마다 1초 쉬기
           await new Promise(res => setTimeout(res, 1000));
         }
 
         setUploadResult({ added, skipped: 0, errors });
         alert("상품 목록이 엑셀 데이터로 완전히 교체되었습니다.");
-
-        // 화면을 새로고침하거나 부모 상태를 업데이트하기 위해 onClose 호출 (선택 사항)
-        // onClose(); 
       } catch (err) {
         console.error(err);
         setUploadResult({
@@ -246,9 +230,21 @@ export function ProductManager({
     reader.readAsArrayBuffer(file);
     e.target.value = "";
   }
+
+  // <-- 검색 필터링 로직 -->
+  const filteredProducts = products.filter((p) => {
+    const term = searchTerm.toLowerCase();
+    const matchName = String(p.name).toLowerCase().includes(term);
+    const matchCode = String(p.code).toLowerCase().includes(term);
+    const matchBarcode = String(p.barcode).toLowerCase().includes(term);
+    return matchName || matchCode || matchBarcode;
+  });
+
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
       <div className="bg-card rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+
+        {/* 헤더 */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
           <div className="flex items-center gap-2">
             <Package className="w-5 h-5 text-primary" />
@@ -267,6 +263,7 @@ export function ProductManager({
           </button>
         </div>
 
+        {/* 버튼 영역 */}
         <div className="px-5 py-3 border-b border-border shrink-0 flex flex-wrap gap-2">
           <button
             onClick={() => {
@@ -279,8 +276,7 @@ export function ProductManager({
             <Plus className="w-4 h-4" />
             상품 추가
           </button>
-          
-          {/* 현데이터 다운로드 버튼 - 업로드 버튼과 같은 스타일 적용 */}
+
           <button
             onClick={downloadProducts}
             className="flex items-center gap-1.5 px-1 py-2 bg-sidebar text-sidebar-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
@@ -310,7 +306,7 @@ export function ProductManager({
           >
             초기화
           </button>
-          
+
           <button
             onClick={() => {
               setShowChangePw((v) => !v);
@@ -320,7 +316,6 @@ export function ProductManager({
             className="flex items-center gap-1.5 px-3 py-2 bg-muted text-muted-foreground rounded-lg text-sm font-medium hover:bg-muted/80 transition-colors ml-auto"
           >
             <KeyRound className="w-4 h-4" />
-            
           </button>
           <button
             onClick={downloadTemplate}
@@ -331,6 +326,30 @@ export function ProductManager({
           </button>
         </div>
 
+        {/* <-- 검색창 영역 시작 --> */}
+        <div className="px-5 py-3 border-b border-border bg-background shrink-0">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="상품명, 상품코드 또는 바코드로 검색..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-10 py-2 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+        {/* <-- 검색창 영역 끝 --> */}
+
+        {/* 비밀번호 변경 영역 (기존 동일) */}
         {showChangePw && (
           <div className="px-5 py-4 border-b border-border bg-muted/20 shrink-0">
             <p className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-1.5">
@@ -344,51 +363,37 @@ export function ProductManager({
             ) : (
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="text-xs text-muted-foreground">
-                    현재 비밀번호
-                  </label>
+                  <label className="text-xs text-muted-foreground">현재 비밀번호</label>
                   <input
                     type="password"
                     className="w-full mt-1 px-3 py-1.5 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                     placeholder="현재 비밀번호"
                     value={pwForm.current}
-                    onChange={(e) =>
-                      setPwForm((f) => ({ ...f, current: e.target.value }))
-                    }
+                    onChange={(e) => setPwForm((f) => ({ ...f, current: e.target.value }))}
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground">
-                    새 비밀번호
-                  </label>
+                  <label className="text-xs text-muted-foreground">새 비밀번호</label>
                   <input
                     type="password"
                     className="w-full mt-1 px-3 py-1.5 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                     placeholder="새 비밀번호 (4자 이상)"
                     value={pwForm.next}
-                    onChange={(e) =>
-                      setPwForm((f) => ({ ...f, next: e.target.value }))
-                    }
+                    onChange={(e) => setPwForm((f) => ({ ...f, next: e.target.value }))}
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground">
-                    새 비밀번호 확인
-                  </label>
+                  <label className="text-xs text-muted-foreground">새 비밀번호 확인</label>
                   <input
                     type="password"
                     className="w-full mt-1 px-3 py-1.5 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                     placeholder="비밀번호 확인"
                     value={pwForm.confirm}
-                    onChange={(e) =>
-                      setPwForm((f) => ({ ...f, confirm: e.target.value }))
-                    }
+                    onChange={(e) => setPwForm((f) => ({ ...f, confirm: e.target.value }))}
                   />
                 </div>
                 {pwError && (
-                  <p className="col-span-3 text-xs text-destructive">
-                    {pwError}
-                  </p>
+                  <p className="col-span-3 text-xs text-destructive">{pwError}</p>
                 )}
                 <div className="col-span-3 flex gap-2">
                   <button
@@ -412,14 +417,13 @@ export function ProductManager({
           </div>
         )}
 
+        {/* 엑셀 업로드 결과 (기존 동일) */}
         {uploadResult && (
           <div className="px-5 py-3 border-b border-border bg-muted/20 shrink-0 space-y-1">
             <div className="flex items-center gap-2 text-sm font-medium text-foreground">
               <Upload className="w-4 h-4 text-primary" />
               업로드 결과:{" "}
-              <span className="text-green-600">
-                {uploadResult.added}개로 변경
-              </span>
+              <span className="text-green-600">{uploadResult.added}개로 변경</span>
               {uploadResult.skipped > 0 && (
                 <span className="text-muted-foreground">
                   / {uploadResult.skipped}개 중복 건너뜀
@@ -427,10 +431,7 @@ export function ProductManager({
               )}
             </div>
             {uploadResult.errors.map((e, i) => (
-              <div
-                key={i}
-                className="flex items-start gap-1.5 text-xs text-destructive"
-              >
+              <div key={i} className="flex items-start gap-1.5 text-xs text-destructive">
                 <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                 {e}
               </div>
@@ -438,46 +439,35 @@ export function ProductManager({
           </div>
         )}
 
+        {/* 상품 추가 영역 (기존 동일) */}
         {showAdd && (
           <div className="px-5 py-3 border-b border-border bg-muted/30 shrink-0">
             <div className="grid grid-cols-3 gap-2 mb-2">
               <div>
-                <label className="text-xs font-medium text-muted-foreground">
-                  박스바코드 *
-                </label>
+                <label className="text-xs font-medium text-muted-foreground">박스바코드 *</label>
                 <input
                   className="w-full mt-1 px-3 py-1.5 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                   placeholder="바코드"
                   value={form.barcode}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, barcode: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, barcode: e.target.value }))}
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground">
-                  상품코드 *
-                </label>
+                <label className="text-xs font-medium text-muted-foreground">상품코드 *</label>
                 <input
                   className="w-full mt-1 px-3 py-1.5 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                   placeholder="상품코드"
                   value={form.code}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, code: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground">
-                  상품명 *
-                </label>
+                <label className="text-xs font-medium text-muted-foreground">상품명 *</label>
                 <input
                   className="w-full mt-1 px-3 py-1.5 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                   placeholder="상품명"
                   value={form.name}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, name: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                 />
               </div>
             </div>
@@ -502,97 +492,102 @@ export function ProductManager({
           </div>
         )}
 
+        {/* 테이블 영역 (products 대신 filteredProducts 배열 렌더링) */}
         <div className="overflow-y-auto flex-1">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm">
+            <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm shadow-sm z-10">
               <tr>
-                <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs text-center">
+                <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs text-center w-1/3">
                   바코드
                 </th>
                 <th className="px-3 py-2.5 font-medium text-muted-foreground text-xs text-center">
                   상품명 / 코드
                 </th>
-                <th className="px-3 py-2.5" />
+                <th className="px-3 py-2.5 w-20" />
               </tr>
             </thead>
             <tbody>
-              {products.map((p) => (
-                <tr
-                  key={p.code || p.barcode}
-                  className="border-t border-border hover:bg-muted/30 transition-colors"
-                >
-                  {editingBarcode === (p.code || p.barcode) && editForm ? (
-                    <>
-                      <td className="px-4 py-2 font-mono text-xs text-muted-foreground text-center">
-                        {p.barcode}
-                      </td>
-                      <td className="px-3 py-2 text-center">
-                        <div className="text-sm font-bold">{editForm.name}</div>
-                        <input
-                          className="w-full mt-1 px-2 py-1 text-xs border border-input rounded bg-background"
-                          value={editForm.code}
-                          onChange={(e) =>
-                            setEditForm((f) =>
-                              f ? { ...f, code: e.target.value } : f,
-                            )
-                          }
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <div className="flex gap-1">
-                          <button
-                            onClick={saveEdit}
-                            className="p-1 text-green-600 hover:bg-green-50 rounded"
-                          >
-                            <Check className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => setEditingBarcode(null)}
-                            className="p-1 text-muted-foreground hover:bg-muted rounded"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground text-center">
-                        {p.barcode}
-                      </td>
-                      <td className="px-3 py-2.5 text-center">
-                        <div className="text-sm font-bold text-foreground">
-                          {p.name}
-                        </div>
-                        <div className="text-sm font-bold text-muted-foreground">
-                          {p.code}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => startEdit(p)}
-                            className="p-1 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-colors"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (
-                                confirm(`"${p.name}"을(를) 삭제하시겠습니까?`)
-                              )
-                                onDelete(p.code || p.barcode);
-                            }}
-                            className="p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </>
-                  )}
+              {filteredProducts.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="text-center py-10 text-muted-foreground">
+                    {searchTerm ? "검색 결과가 없습니다." : "등록된 상품이 없습니다."}
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                filteredProducts.map((p) => (
+                  <tr
+                    key={p.code || p.barcode}
+                    className="border-t border-border hover:bg-muted/30 transition-colors"
+                  >
+                    {editingBarcode === (p.code || p.barcode) && editForm ? (
+                      <>
+                        <td className="px-4 py-2 font-mono text-xs text-muted-foreground text-center">
+                          {p.barcode}
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          <div className="text-sm font-bold">{editForm.name}</div>
+                          <input
+                            className="w-full mt-1 px-2 py-1 text-xs border border-input rounded bg-background"
+                            value={editForm.code}
+                            onChange={(e) =>
+                              setEditForm((f) => (f ? { ...f, code: e.target.value } : f))
+                            }
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="flex gap-1 justify-end">
+                            <button
+                              onClick={saveEdit}
+                              className="p-1 text-green-600 hover:bg-green-50 rounded"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setEditingBarcode(null)}
+                              className="p-1 text-muted-foreground hover:bg-muted rounded"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground text-center">
+                          {p.barcode}
+                        </td>
+                        <td className="px-3 py-2.5 text-center">
+                          <div className="text-sm font-bold text-foreground">
+                            {p.name}
+                          </div>
+                          <div className="text-sm font-bold text-muted-foreground">
+                            {p.code}
+                          </div>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <div className="flex gap-1 justify-end">
+                            <button
+                              onClick={() => startEdit(p)}
+                              className="p-1 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-colors"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm(`"${p.name}"을(를) 삭제하시겠습니까?`))
+                                  onDelete(p.code || p.barcode);
+                              }}
+                              className="p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
